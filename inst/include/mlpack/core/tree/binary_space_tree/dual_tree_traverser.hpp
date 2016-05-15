@@ -6,24 +6,9 @@
  * nested class of BinarySpaceTree which traverses two trees in a depth-first
  * manner with a given set of rules which indicate the branches which can be
  * pruned and the order in which to recurse.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __MLPACK_CORE_TREE_BINARY_SPACE_TREE_DUAL_TREE_TRAVERSER_HPP
-#define __MLPACK_CORE_TREE_BINARY_SPACE_TREE_DUAL_TREE_TRAVERSER_HPP
+#ifndef MLPACK_CORE_TREE_BINARY_SPACE_TREE_DUAL_TREE_TRAVERSER_HPP
+#define MLPACK_CORE_TREE_BINARY_SPACE_TREE_DUAL_TREE_TRAVERSER_HPP
 
 #include <mlpack/core.hpp>
 
@@ -32,13 +17,15 @@
 namespace mlpack {
 namespace tree {
 
-template<typename BoundType,
+template<typename MetricType,
          typename StatisticType,
          typename MatType,
-         typename SplitType>
+         template<typename BoundMetricType, typename...> class BoundType,
+         template<typename SplitBoundType, typename SplitMatType>
+             class SplitType>
 template<typename RuleType>
-class BinarySpaceTree<BoundType, StatisticType, MatType, SplitType>::
-    DualTreeTraverser
+class BinarySpaceTree<MetricType, StatisticType, MatType, BoundType,
+                      SplitType>::DualTreeTraverser
 {
  public:
   /**
@@ -97,11 +84,11 @@ class BinarySpaceTree<BoundType, StatisticType, MatType, SplitType>::
   typename RuleType::TraversalInfoType traversalInfo;
 };
 
-}; // namespace tree
-}; // namespace mlpack
+} // namespace tree
+} // namespace mlpack
 
 // Include implementation.
 #include "dual_tree_traverser_impl.hpp"
 
-#endif // __MLPACK_CORE_TREE_BINARY_SPACE_TREE_DUAL_TREE_TRAVERSER_HPP
+#endif // MLPACK_CORE_TREE_BINARY_SPACE_TREE_DUAL_TREE_TRAVERSER_HPP
 

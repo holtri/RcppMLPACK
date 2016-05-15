@@ -5,24 +5,9 @@
  * An implementation of Bradley and Fayyad's "Refining Initial Points for
  * K-Means clustering".  This class is meant to provide better initial points
  * for the k-means algorithm.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __MLPACK_METHODS_KMEANS_REFINED_START_HPP
-#define __MLPACK_METHODS_KMEANS_REFINED_START_HPP
+#ifndef MLPACK_METHODS_KMEANS_REFINED_START_HPP
+#define MLPACK_METHODS_KMEANS_REFINED_START_HPP
 
 #include <mlpack/core.hpp>
 
@@ -58,7 +43,23 @@ class RefinedStart
 
   /**
    * Partition the given dataset into the given number of clusters according to
-   * the random sampling scheme outlined in Bradley and Fayyad's paper.
+   * the random sampling scheme outlined in Bradley and Fayyad's paper, and
+   * return centroids.
+   *
+   * @tparam MatType Type of data (arma::mat or arma::sp_mat).
+   * @param data Dataset to partition.
+   * @param clusters Number of clusters to split dataset into.
+   * @param centroids Matrix to store centroids into.
+   */
+  template<typename MatType>
+  void Cluster(const MatType& data,
+               const size_t clusters,
+               arma::mat& centroids) const;
+
+  /**
+   * Partition the given dataset into the given number of clusters according to
+   * the random sampling scheme outlined in Bradley and Fayyad's paper, and
+   * return point assignments.
    *
    * @tparam MatType Type of data (arma::mat or arma::sp_mat).
    * @param data Dataset to partition.
@@ -69,7 +70,7 @@ class RefinedStart
   template<typename MatType>
   void Cluster(const MatType& data,
                const size_t clusters,
-               arma::Col<size_t>& assignments) const;
+               arma::Row<size_t>& assignments) const;
 
   //! Get the number of samplings that will be performed.
   size_t Samplings() const { return samplings; }
@@ -81,6 +82,14 @@ class RefinedStart
   //! Modify the percentage of the data used by each subsampling.
   double& Percentage() { return percentage; }
 
+  //! Serialize the object.
+  template<typename Archive>
+  void Serialize(Archive& ar, const unsigned int /* version */)
+  {
+    ar & data::CreateNVP(samplings, "samplings");
+    ar & data::CreateNVP(percentage, "percentage");
+  }
+
  private:
   //! The number of samplings to perform.
   size_t samplings;
@@ -88,8 +97,8 @@ class RefinedStart
   double percentage;
 };
 
-}; // namespace kmeans
-}; // namespace mlpack
+} // namespace kmeans
+} // namespace mlpack
 
 // Include implementation.
 #include "refined_start_impl.hpp"

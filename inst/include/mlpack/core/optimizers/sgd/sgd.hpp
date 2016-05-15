@@ -3,24 +3,9 @@
  * @author Ryan Curtin
  *
  * Stochastic Gradient Descent (SGD).
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __MLPACK_CORE_OPTIMIZERS_SGD_SGD_HPP
-#define __MLPACK_CORE_OPTIMIZERS_SGD_SGD_HPP
+#ifndef MLPACK_CORE_OPTIMIZERS_SGD_SGD_HPP
+#define MLPACK_CORE_OPTIMIZERS_SGD_SGD_HPP
 
 #include <mlpack/core.hpp>
 
@@ -46,7 +31,7 @@ namespace optimization {
  * is chosen according to \f$ j \f$ (the iteration number).  The SGD class
  * supports either scanning through each of the \f$ n \f$ functions \f$ f_i(A)
  * \f$ linearly, or in a random sequence.  The algorithm continues until \f$ j
- * \f$ reaches the maximum number of iterations -- or when a full sequence of
+ * \f$ reaches the maximum number of iterations---or when a full sequence of
  * updates through each of the \f$ n \f$ functions \f$ f_i(A) \f$ produces an
  * improvement within a certain tolerance \f$ \epsilon \f$.  That is,
  *
@@ -87,7 +72,12 @@ class SGD
 {
  public:
   /**
-   * Construct the SGD optimizer with the given function and parameters.
+   * Construct the SGD optimizer with the given function and parameters.  The
+   * defaults here are not necessarily good for the given problem, so it is
+   * suggested that the values used be tailored to the task at hand.  The
+   * maximum number of iterations refers to the maximum number of points that
+   * are processed (i.e., one iteration equals one point; one iteration does not
+   * equal one pass over the dataset).
    *
    * @param function Function to be optimized (minimized).
    * @param stepSize Step size for each iteration.
@@ -138,9 +128,6 @@ class SGD
   //! Modify whether or not the individual functions are shuffled.
   bool& Shuffle() { return shuffle; }
 
-  // convert the obkect into a string
-  std::string ToString() const;
-
  private:
   //! The instantiated function.
   DecomposableFunctionType& function;
@@ -159,8 +146,8 @@ class SGD
   bool shuffle;
 };
 
-}; // namespace optimization
-}; // namespace mlpack
+} // namespace optimization
+} // namespace mlpack
 
 // Include implementation.
 #include "sgd_impl.hpp"

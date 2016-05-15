@@ -4,25 +4,10 @@
  *
  * Declaration of Radical class (RADICAL is Robust, Accurate, Direct ICA
  * aLgorithm).
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __MLPACK_METHODS_RADICAL_RADICAL_HPP
-#define __MLPACK_METHODS_RADICAL_RADICAL_HPP
+#ifndef MLPACK_METHODS_RADICAL_RADICAL_HPP
+#define MLPACK_METHODS_RADICAL_RADICAL_HPP
 
 #include <mlpack/core.hpp>
 
@@ -121,9 +106,6 @@ class Radical
   //! Modify the number of sweeps.
   size_t& Sweeps() { return sweeps; }
 
-  // Returns a string representation of this object. 
-  std::string ToString() const;
-
  private:
   //! Standard deviation of the Gaussian noise added to the replicates of
   //! the data points during Radical2D.
@@ -152,7 +134,7 @@ void WhitenFeatureMajorMatrix(const arma::mat& matX,
                               arma::mat& matXWhitened,
                               arma::mat& matWhitening);
 
-}; // namespace radical
-}; // namespace mlpack
+} // namespace radical
+} // namespace mlpack
 
 #endif

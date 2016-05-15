@@ -2,56 +2,28 @@
  * @file random.hpp
  *
  * Miscellaneous math random-related routines.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __MLPACK_CORE_MATH_RANDOM_HPP
-#define __MLPACK_CORE_MATH_RANDOM_HPP
+#ifndef MLPACK_CORE_MATH_RANDOM_HPP
+#define MLPACK_CORE_MATH_RANDOM_HPP
 
 #include <mlpack/prereqs.hpp>
-#include <boost/random.hpp>
+#include <mlpack/mlpack_export.hpp>
+#include <random>
 
 namespace mlpack {
 namespace math /** Miscellaneous math routines. */ {
 
-// Annoying Boost versioning issues.
-#include <boost/version.hpp>
+/**
+ * MLPACK_EXPORT is required for global variables; it exports the symbols
+ * correctly on Windows.
+ */
 
-#if BOOST_VERSION >= 104700
-  // Global random object.
-  extern boost::random::mt19937 randGen;
-  // Global uniform distribution.
-  extern boost::random::uniform_01<> randUniformDist;
-  // Global normal distribution.
-  extern boost::random::normal_distribution<> randNormalDist;
-#else
-  // Global random object.
-  extern boost::mt19937 randGen;
-
-  #if BOOST_VERSION >= 103900
-    // Global uniform distribution.
-    extern boost::uniform_01<> randUniformDist;
-  #else
-    // Pre-1.39 Boost.Random did not give default template parameter values.
-    extern boost::uniform_01<boost::mt19937, double> randUniformDist;
-  #endif
-
-  // Global normal distribution.
-  extern boost::normal_distribution<> randNormalDist;
-#endif
+// Global random object.
+extern MLPACK_EXPORT std::mt19937 randGen;
+// Global uniform distribution.
+extern MLPACK_EXPORT std::uniform_real_distribution<> randUniformDist;
+// Global normal distribution.
+extern MLPACK_EXPORT std::normal_distribution<> randNormalDist;
 
 /**
  * Set the random seed used by the random functions (Random() and RandInt()).
@@ -64,6 +36,12 @@ inline void RandomSeed(const size_t seed)
 {
   randGen.seed((uint32_t) seed);
   srand((unsigned int) seed);
+#if ARMA_VERSION_MAJOR > 3 || \
+    (ARMA_VERSION_MAJOR == 3 && ARMA_VERSION_MINOR >= 930)
+  // Armadillo >= 3.930 has its own random number generator internally that we
+  // need to set the seed for also.
+  arma::arma_rng::set_seed(seed);
+#endif
 }
 
 /**
@@ -71,13 +49,7 @@ inline void RandomSeed(const size_t seed)
  */
 inline double Random()
 {
-#if BOOST_VERSION >= 103900
   return randUniformDist(randGen);
-#else
-  // Before Boost 1.39, we did not give the random object when we wanted a
-  // random number; that gets given at construction time.
-  return randUniformDist();
-#endif
 }
 
 /**
@@ -85,13 +57,7 @@ inline double Random()
  */
 inline double Random(const double lo, const double hi)
 {
-#if BOOST_VERSION >= 103900
   return lo + (hi - lo) * randUniformDist(randGen);
-#else
-  // Before Boost 1.39, we did not give the random object when we wanted a
-  // random number; that gets given at construction time.
-  return lo + (hi - lo) * randUniformDist();
-#endif
 }
 
 /**
@@ -99,13 +65,7 @@ inline double Random(const double lo, const double hi)
  */
 inline int RandInt(const int hiExclusive)
 {
-#if BOOST_VERSION >= 103900
   return (int) std::floor((double) hiExclusive * randUniformDist(randGen));
-#else
-  // Before Boost 1.39, we did not give the random object when we wanted a
-  // random number; that gets given at construction time.
-  return (int) std::floor((double) hiExclusive * randUniformDist());
-#endif
 }
 
 /**
@@ -113,16 +73,8 @@ inline int RandInt(const int hiExclusive)
  */
 inline int RandInt(const int lo, const int hiExclusive)
 {
-#if BOOST_VERSION >= 103900
   return lo + (int) std::floor((double) (hiExclusive - lo)
                                * randUniformDist(randGen));
-#else
-  // Before Boost 1.39, we did not give the random object when we wanted a
-  // random number; that gets given at construction time.
-  return lo + (int) std::floor((double) (hiExclusive - lo)
-                               * randUniformDist());
-#endif
-
 }
 
 /**
@@ -145,7 +97,7 @@ inline double RandNormal(const double mean, const double variance)
   return variance * randNormalDist(randGen) + mean;
 }
 
-}; // namespace math
-}; // namespace mlpack
+} // namespace math
+} // namespace mlpack
 
-#endif // __MLPACK_CORE_MATH_MATH_LIB_HPP
+#endif // MLPACK_CORE_MATH_MATH_LIB_HPP

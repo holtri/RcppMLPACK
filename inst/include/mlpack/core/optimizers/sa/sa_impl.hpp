@@ -3,24 +3,9 @@
  * @auther Zhihao Lou
  *
  * The implementation of the SA optimizer.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __MLPACK_CORE_OPTIMIZERS_SA_SA_IMPL_HPP
-#define __MLPACK_CORE_OPTIMIZERS_SA_SA_IMPL_HPP
+#ifndef MLPACK_CORE_OPTIMIZERS_SA_SA_IMPL_HPP
+#define MLPACK_CORE_OPTIMIZERS_SA_SA_IMPL_HPP
 
 #include <mlpack/core/dists/laplace_distribution.hpp>
 
@@ -104,14 +89,14 @@ double SA<FunctionType, CoolingScheduleType>::Optimize(arma::mat &iterate)
     // Terminate, if possible.
     if (frozenCount >= maxToleranceSweep * moveCtrlSweep * iterate.n_elem)
     {
-      Rcpp::Rcout << "SA: minimized within tolerance " << tolerance << " for "
+      Log::Debug << "SA: minimized within tolerance " << tolerance << " for "
           << maxToleranceSweep << " sweeps after " << i << " iterations; "
           << "terminating optimization." << std::endl;
       return energy;
     }
   }
 
-  Rcpp::Rcout << "SA: maximum iterations (" << maxIterations << ") reached; "
+  Log::Debug << "SA: maximum iterations (" << maxIterations << ") reached; "
       << "terminating optimization." << std::endl;
   return energy;
 }
@@ -214,31 +199,7 @@ void SA<FunctionType, CoolingScheduleType>::MoveControl(const size_t nMoves,
   accept.zeros();
 }
 
-template<
-    typename FunctionType,
-    typename CoolingScheduleType
->
-std::string SA<FunctionType, CoolingScheduleType>::
-ToString() const
-{
-  std::ostringstream convert;
-  convert << "SA [" << this << "]" << std::endl;
-  convert << "  Function:" << std::endl;
-  convert << util::Indent(function.ToString(), 2);
-  convert << "  Cooling Schedule:" << std::endl;
-  convert << util::Indent(coolingSchedule.ToString(), 2);
-  convert << "  Temperature: " << temperature << std::endl;
-  convert << "  Initial moves: " << initMoves << std::endl;
-  convert << "  Sweeps per move control: " << moveCtrlSweep << std::endl;
-  convert << "  Tolerance: " << tolerance << std::endl;
-  convert << "  Maximum sweeps below tolerance: " << maxToleranceSweep
-      << std::endl;
-  convert << "  Move control gain: " << gain << std::endl;
-  convert << "  Maximum iterations: " << maxIterations << std::endl;
-  return convert.str();
-}
-
-}; // namespace optimization
-}; // namespace mlpack
+} // namespace optimization
+} // namespace mlpack
 
 #endif

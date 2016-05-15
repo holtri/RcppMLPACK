@@ -3,24 +3,9 @@
  * @author Ajinkya Kale <kaleajinkya@gmail.com>
  *
  * Implementation of the hyperbolic tangent kernel.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __MLPACK_CORE_KERNELS_HYPERBOLIC_TANGENT_KERNEL_HPP
-#define __MLPACK_CORE_KERNELS_HYPERBOLIC_TANGENT_KERNEL_HPP
+#ifndef MLPACK_CORE_KERNELS_HYPERBOLIC_TANGENT_KERNEL_HPP
+#define MLPACK_CORE_KERNELS_HYPERBOLIC_TANGENT_KERNEL_HPP
 
 #include <mlpack/core.hpp>
 
@@ -59,13 +44,15 @@ class HyperbolicTangentKernel
    * Evaluate the hyperbolic tangent kernel.  This evaluation uses Armadillo's
    * dot() function.
    *
-   * @tparam VecType Type of vector (should be arma::vec or arma::spvec).
+   * @tparam VecTypeA Type of first vector (should be arma::vec or
+   *      arma::sp_vec).
+   * @tparam VecTypeB Type of second vector (arma::vec / arma::sp_vec).
    * @param a First vector.
    * @param b Second vector.
    * @return K(a, b).
    */
-  template<typename VecType>
-  double Evaluate(const VecType& a, const VecType& b)
+  template<typename VecTypeA, typename VecTypeB>
+  double Evaluate(const VecTypeA& a, const VecTypeB& b)
   {
     return tanh(scale * arma::dot(a, b) + offset);
   }
@@ -80,14 +67,12 @@ class HyperbolicTangentKernel
   //! Modify offset for the kernel.
   double& Offset() { return offset; }
 
-  //! Convert object to string.
-  std::string ToString() const
+  //! Serialize the kernel.
+  template<typename Archive>
+  void Serialize(Archive& ar, const unsigned int /* version */)
   {
-    std::ostringstream convert;
-    convert << "HyperbolicTangentKernel [" << this << "]" << std::endl;
-    convert << "  Scale: " << scale << std::endl;
-    convert << "  Offset: " << offset << std::endl;
-    return convert.str();
+    ar & data::CreateNVP(scale, "scale");
+    ar & data::CreateNVP(offset, "offset");
   }
 
  private:
@@ -95,7 +80,7 @@ class HyperbolicTangentKernel
   double offset;
 };
 
-}; // namespace kernel
-}; // namespace mlpack
+} // namespace kernel
+} // namespace mlpack
 
 #endif

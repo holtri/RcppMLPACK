@@ -2,24 +2,9 @@
  * @file clamp.hpp
  *
  * Miscellaneous math clamping routines.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __MLPACK_CORE_MATH_CLAMP_HPP
-#define __MLPACK_CORE_MATH_CLAMP_HPP
+#ifndef MLPACK_CORE_MATH_CLAMP_HPP
+#define MLPACK_CORE_MATH_CLAMP_HPP
 
 #include <stdlib.h>
 #include <math.h>
@@ -71,7 +56,7 @@ inline double ClampRange(double value,
   return value;
 }
 
-}; // namespace math
-}; // namespace mlpack
+} // namespace math
+} // namespace mlpack
 
-#endif // __MLPACK_CORE_MATH_CLAMP_HPP
+#endif // MLPACK_CORE_MATH_CLAMP_HPP

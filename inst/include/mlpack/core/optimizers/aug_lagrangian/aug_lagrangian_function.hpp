@@ -3,24 +3,9 @@
  * @author Ryan Curtin
  *
  * Contains a utility class for AugLagrangian.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __MLPACK_CORE_OPTIMIZERS_AUG_LAGRANGIAN_AUG_LAGRANGIAN_FUNCTION_HPP
-#define __MLPACK_CORE_OPTIMIZERS_AUG_LAGRANGIAN_AUG_LAGRANGIAN_FUNCTION_HPP
+#ifndef MLPACK_CORE_OPTIMIZERS_AUG_LAGRANGIAN_AUG_LAGRANGIAN_FUNCTION_HPP
+#define MLPACK_CORE_OPTIMIZERS_AUG_LAGRANGIAN_AUG_LAGRANGIAN_FUNCTION_HPP
 
 #include <mlpack/core.hpp>
 
@@ -108,9 +93,6 @@ class AugLagrangianFunction
   const LagrangianFunction& Function() const { return function; }
   //! Modify the Lagrangian function.
   LagrangianFunction& Function() { return function; }
-  
-  // convert the obkect into a string
-  std::string ToString() const;
 
  private:
   //! Instantiation of the function to be optimized.
@@ -122,11 +104,11 @@ class AugLagrangianFunction
   double sigma;
 };
 
-}; // namespace optimization
-}; // namespace mlpack
+} // namespace optimization
+} // namespace mlpack
 
 // Include basic implementation.
 #include "aug_lagrangian_function_impl.hpp"
 
-#endif // __MLPACK_CORE_OPTIMIZERS_AUG_LAGRANGIAN_AUG_LAGRANGIAN_FUNCTION_HPP
+#endif // MLPACK_CORE_OPTIMIZERS_AUG_LAGRANGIAN_AUG_LAGRANGIAN_FUNCTION_HPP
 

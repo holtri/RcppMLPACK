@@ -3,25 +3,10 @@
  * @author Ajinkya Kale
  *
  * Use the naive method to construct the kernel matrix.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __MLPACK_METHODS_KERNEL_PCA_NAIVE_METHOD_HPP
-#define __MLPACK_METHODS_KERNEL_PCA_NAIVE_METHOD_HPP
+#ifndef MLPACK_METHODS_KERNEL_PCA_NAIVE_METHOD_HPP
+#define MLPACK_METHODS_KERNEL_PCA_NAIVE_METHOD_HPP
 
 #include <mlpack/core.hpp>
 
@@ -31,10 +16,9 @@ namespace kpca {
 template<typename KernelType>
 class NaiveKernelRule
 {
- public:
   public:
     /**
-     * Construct the kernel matrix approximation using the nystroem method.
+     * Construct the exact kernel matrix.
      *
      * @param data Input data points.
      * @param transformedData Matrix to output results into.
@@ -55,7 +39,7 @@ class NaiveKernelRule
     // Resize the kernel matrix to the right size.
     kernelMatrix.set_size(data.n_cols, data.n_cols);
 
-    // Note that we only need to calculate the upper triangular part of the 
+    // Note that we only need to calculate the upper triangular part of the
     // kernel matrix, since it is symmetric. This helps minimize the number of
     // kernel evaluations.
     for (size_t i = 0; i < data.n_cols; ++i)
@@ -95,10 +79,11 @@ class NaiveKernelRule
     eigvec = arma::fliplr(eigvec);
 
     transformedData = eigvec.t() * kernelMatrix;
+    transformedData.each_col() /= arma::sqrt(eigval);
   }
 };
 
-}; // namespace kpca
-}; // namespace mlpack
+} // namespace kpca
+} // namespace mlpack
 
 #endif

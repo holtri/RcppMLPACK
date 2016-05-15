@@ -3,21 +3,6 @@
  * @author Ryan Curtin
  *
  * Implementation of DiscreteDistribution probability distribution.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "discrete_distribution.hpp"
 
@@ -52,7 +37,7 @@ arma::vec DiscreteDistribution::Random() const
 /**
  * Estimate the probability distribution directly from the given observations.
  */
-void DiscreteDistribution::Estimate(const arma::mat& observations)
+void DiscreteDistribution::Train(const arma::mat& observations)
 {
   // Clear old probabilities.
   probabilities.zeros();
@@ -67,7 +52,7 @@ void DiscreteDistribution::Estimate(const arma::mat& observations)
     // Ensure that the observation is within the bounds.
     if (obs >= probabilities.n_elem)
     {
-      Rcpp::Rcout << "DiscreteDistribution::Estimate(): observation " << i
+      Log::Debug << "DiscreteDistribution::Train(): observation " << i
           << " (" << obs << ") is invalid; observation must be in [0, "
           << probabilities.n_elem << "] for this distribution." << std::endl;
     }
@@ -87,7 +72,7 @@ void DiscreteDistribution::Estimate(const arma::mat& observations)
  * Estimate the probability distribution from the given observations when also
  * given probabilities that each observation is from this distribution.
  */
-void DiscreteDistribution::Estimate(const arma::mat& observations,
+void DiscreteDistribution::Train(const arma::mat& observations,
                                     const arma::vec& probObs)
 {
   // Clear old probabilities.
@@ -103,7 +88,7 @@ void DiscreteDistribution::Estimate(const arma::mat& observations,
     // Ensure that the observation is within the bounds.
     if (obs >= probabilities.n_elem)
     {
-      Rcpp::Rcout << "DiscreteDistribution::Estimate(): observation " << i
+      Log::Debug << "DiscreteDistribution::Train(): observation " << i
           << " (" << obs << ") is invalid; observation must be in [0, "
           << probabilities.n_elem << "] for this distribution." << std::endl;
     }
@@ -118,21 +103,3 @@ void DiscreteDistribution::Estimate(const arma::mat& observations,
   else
     probabilities.fill(1 / probabilities.n_elem); // Force normalization.
 }
-
-/*
- * Returns a string representation of this object.
- */
-std::string DiscreteDistribution::ToString() const
-{
-  std::ostringstream convert;
-  convert << "DiscreteDistribution [" << this << "]" << std::endl;
-
-  // Secondary object so we can indent the probabilities.
-  std::ostringstream prob;
-  prob << "Probabilities:" << std::endl;
-  prob << probabilities;
-
-  convert << util::Indent(prob.str());
-  return convert.str();
-}
-

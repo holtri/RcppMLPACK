@@ -4,35 +4,31 @@
  * @author Mohan Rajendran
  * @author Ryan Curtin
  *
+ * Alternating Matrix Factorization
+ *
  * The AMF (alternating matrix factorization) class, from which more commonly
  * known techniques such as incremental SVD, NMF, and batch-learning SVD can be
  * derived.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __MLPACK_METHODS_AMF_AMF_HPP
-#define __MLPACK_METHODS_AMF_AMF_HPP
+#ifndef MLPACK_METHODS_AMF_AMF_HPP
+#define MLPACK_METHODS_AMF_AMF_HPP
 
 #include <mlpack/core.hpp>
+
 #include <mlpack/methods/amf/update_rules/nmf_mult_dist.hpp>
+#include <mlpack/methods/amf/update_rules/nmf_als.hpp>
+#include <mlpack/methods/amf/update_rules/svd_batch_learning.hpp>
+#include <mlpack/methods/amf/update_rules/svd_incomplete_incremental_learning.hpp>
+#include <mlpack/methods/amf/update_rules/svd_complete_incremental_learning.hpp>
+
 #include <mlpack/methods/amf/init_rules/random_init.hpp>
+#include <mlpack/methods/amf/init_rules/random_acol_init.hpp>
+
 #include <mlpack/methods/amf/termination_policies/simple_residue_termination.hpp>
+#include <mlpack/methods/amf/termination_policies/simple_tolerance_termination.hpp>
 
 namespace mlpack {
-namespace amf {
+namespace amf /** Alternating Matrix Factorization **/ {
 
 /**
  * This class implements AMF (alternating matrix factorization) on the given
@@ -46,7 +42,7 @@ namespace amf {
  * contains the initialization rule for the W and H matrix; the last contains
  * the update rule to be used during each iteration. This templatization allows
  * the user to try various update rules, initialization rules, and termination
- * policies (including ones not supplied with MLPACK) for factorization.  By
+ * policies (including ones not supplied with mlpack) for factorization.  By
  * default, the template parameters to AMF implement non-negative matrix
  * factorization with the multiplicative distance update.
  *
@@ -59,7 +55,7 @@ namespace amf {
  * arma::mat H; // Encoding matrix
  *
  * AMF<> amf; // Default options: NMF with multiplicative distance update rules.
- * amf.Apply(V, W, H, r);
+ * amf.Apply(V, r, W, H);
  * @endcode
  *
  * @tparam TerminationPolicy The policy to use for determining when the
@@ -69,10 +65,10 @@ namespace amf {
  * @tparam UpdateRule The update rule for calculating W and H matrix at each
  *     iteration.
  *
- * @see NMF_MultiplicativeDistanceUpdate
+ * @see NMFMultiplicativeDistanceUpdate, SimpleResidueTermination
  */
 template<typename TerminationPolicyType = SimpleResidueTermination,
-         typename InitializationRuleType = RandomInitialization,
+         typename InitializationRuleType = RandomAcolInitialization<>,
          typename UpdateRuleType = NMFMultiplicativeDistanceUpdate>
 class AMF
 {
@@ -137,11 +133,135 @@ class AMF
   UpdateRuleType update;
 }; // class AMF
 
-}; // namespace amf
-}; // namespace mlpack
+typedef amf::AMF<amf::SimpleResidueTermination,
+                 amf::RandomAcolInitialization<>,
+                 amf::NMFALSUpdate> NMFALSFactorizer;
+
+//! Add simple typedefs
+#ifdef MLPACK_USE_CXX11
+
+/**
+ * SVDBatchFactorizer factorizes given matrix V into two matrices W and H by
+ * gradient descent. SVD batch learning is described in paper 'A Guide to
+ * singular Value Decomposition' by Chih-Chao Ma.
+ *
+ * @see SVDBatchLearning
+ */
+template<class MatType>
+using SVDBatchFactorizer = amf::AMF<amf::SimpleResidueTermination,
+                                    amf::RandomAcolInitialization<>,
+                                    amf::SVDBatchLearning>;
+
+/**
+ * SVDIncompleteIncrementalFactorizer factorizes given matrix V into two
+ * matrices W and H by incomplete incremental gradient descent. SVD incomplete
+ * incremental learning is described in paper 'A Guide to singular Value
+ * Decomposition'
+ * by Chih-Chao Ma.
+ *
+ * @see SVDIncompleteIncrementalLearning
+ */
+template<class MatType>
+using SVDIncompleteIncrementalFactorizer = amf::AMF<
+    amf::SimpleResidueTermination,
+    amf::RandomAcolInitialization<>,
+    amf::SVDIncompleteIncrementalLearning>;
+/**
+ * SVDCompleteIncrementalFactorizer factorizes given matrix V into two matrices
+ * W and H by complete incremental gradient descent. SVD complete incremental
+ * learning is described in paper 'A Guide to singular Value Decomposition'
+ * by Chih-Chao Ma.
+ *
+ * @see SVDCompleteIncrementalLearning
+ */
+template<class MatType>
+using SVDCompleteIncrementalFactorizer = amf::AMF<
+    amf::SimpleResidueTermination,
+    amf::RandomAcolInitialization<>,
+    amf::SVDCompleteIncrementalLearning<MatType>>;
+
+#else // #ifdef MLPACK_USE_CXX11
+
+/**
+ * SparseSVDBatchFactorizer factorizes given sparse matrix V into two matrices W
+ * and H by gradient descent. SVD batch learning is described in paper 'A Guide
+ * to singular Value Decomposition' by Chih-Chao Ma.
+ *
+ * @see SVDBatchLearning
+ */
+typedef amf::AMF<amf::SimpleResidueTermination,
+                 amf::RandomAcolInitialization<>,
+                 amf::SVDBatchLearning> SparseSVDBatchFactorizer;
+
+/**
+ * SparseSVDBatchFactorizer factorizes given matrix V into two matrices W and H
+ * by gradient descent. SVD batch learning is described in paper 'A Guide to
+ * singular Value Decomposition' by Chih-Chao Ma.
+ *
+ * @see SVDBatchLearning
+ */
+typedef amf::AMF<amf::SimpleResidueTermination,
+                 amf::RandomAcolInitialization<>,
+                 amf::SVDBatchLearning> SVDBatchFactorizer;
+/**
+ * SparseSVDIncompleteIncrementalFactorizer factorizes given sparse matrix V
+ * into two matrices W and H by incomplete incremental gradient descent.  SVD
+ * incomplete incremental learning is described in paper 'A Guide to singular
+ * Value Decomposition' by Chih-Chao Ma.
+ *
+ * @see SVDIncompleteIncrementalLearning
+ */
+typedef amf::AMF<amf::SimpleResidueTermination,
+                 amf::RandomAcolInitialization<>,
+                 amf::SVDIncompleteIncrementalLearning>
+        SparseSVDIncompleteIncrementalFactorizer;
+
+/**
+ * SVDIncompleteIncrementalFactorizer factorizes given matrix V into two
+ * matrices W and H by incomplete incremental gradient descent. SVD incomplete
+ * incremental learning is described in paper 'A Guide to singular Value
+ * Decomposition' by Chih-Chao Ma.
+ *
+ * @see SVDIncompleteIncrementalLearning
+ */
+typedef amf::AMF<amf::SimpleResidueTermination,
+                 amf::RandomAcolInitialization<>,
+                 amf::SVDIncompleteIncrementalLearning>
+        SVDIncompleteIncrementalFactorizer;
+
+/**
+ * SparseSVDCompleteIncrementalFactorizer factorizes given sparse matrix V
+ * into two matrices W and H by complete incremental gradient descent. SVD
+ * complete incremental learning is described in paper 'A Guide to singular
+ * Value Decomposition' by Chih-Chao Ma.
+ *
+ * @see SVDCompleteIncrementalLearning
+ */
+typedef amf::AMF<amf::SimpleResidueTermination,
+                 amf::RandomAcolInitialization<>,
+                 amf::SVDCompleteIncrementalLearning<arma::sp_mat> >
+        SparseSVDCompleteIncrementalFactorizer;
+
+/**
+ * SVDCompleteIncrementalFactorizer factorizes given matrix V into two matrices
+ * W and H by complete incremental gradient descent. SVD complete incremental
+ * learning is described in paper 'A Guide to singular Value Decomposition'
+ * by Chih-Chao Ma.
+ *
+ * @see SVDCompleteIncrementalLearning
+ */
+typedef amf::AMF<amf::SimpleResidueTermination,
+                 amf::RandomAcolInitialization<>,
+                 amf::SVDCompleteIncrementalLearning<arma::mat> >
+        SVDCompleteIncrementalFactorizer;
+
+#endif // #ifdef MLPACK_USE_CXX11
+
+} // namespace amf
+} // namespace mlpack
 
 // Include implementation.
 #include "amf_impl.hpp"
 
-#endif
+#endif // MLPACK_METHODS_AMF_AMF_HPP
 

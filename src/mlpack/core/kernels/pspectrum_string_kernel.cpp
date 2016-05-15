@@ -7,21 +7,6 @@
  * one-dimensional data matrix (data vector) to FastMKS which stores indices of
  * strings; then, the actual strings are given to the PSpectrumStringKernel at
  * construction time, and the kernel knows to map the indices to actual strings.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "pspectrum_string_kernel.hpp"
 
@@ -44,7 +29,7 @@ mlpack::kernel::PSpectrumStringKernel::PSpectrumStringKernel(
 {
   // We have to assemble the counts of substrings.  This is not a particularly
   // fast operation, unfortunately, but it only needs to be done once.
-  Rcpp::Rcout << "Assembling counts of substrings of length " << p << "."
+  Log::Info << "Assembling counts of substrings of length " << p << "."
       << std::endl;
 
   // Resize for number of datasets.
@@ -94,5 +79,5 @@ mlpack::kernel::PSpectrumStringKernel::PSpectrumStringKernel(
     }
   }
 
-  Rcpp::Rcout << "Substring extraction complete." << std::endl;
+  Log::Info << "Substring extraction complete." << std::endl;
 }

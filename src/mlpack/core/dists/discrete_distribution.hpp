@@ -4,24 +4,9 @@
  *
  * Implementation of the discrete distribution, where each discrete observation
  * has a given probability.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __MLPACK_METHODS_HMM_DISTRIBUTIONS_DISCRETE_DISTRIBUTION_HPP
-#define __MLPACK_METHODS_HMM_DISTRIBUTIONS_DISCRETE_DISTRIBUTION_HPP
+#ifndef MLPACK_CORE_DISTRIBUTIONS_DISCRETE_DISTRIBUTION_HPP
+#define MLPACK_CORE_DISTRIBUTIONS_DISCRETE_DISTRIBUTION_HPP
 
 #include <mlpack/core.hpp>
 
@@ -43,7 +28,7 @@ namespace distribution /** Probability distributions. */ {
  * (vec.n_rows == 1).  Any additional dimensions will simply be ignored.
  *
  * @note
- * This class, like every other class in MLPACK, uses arma::vec to represent
+ * This class, like every other class in mlpack, uses arma::vec to represent
  * observations.  While a discrete distribution only has positive integers
  * (size_t) as observations, these can be converted to doubles (which is what
  * arma::vec holds).  This distribution internally converts those doubles back
@@ -92,7 +77,7 @@ class DiscreteDistribution
   /**
    * Get the dimensionality of the distribution.
    */
-  size_t Dimensionality() const { return 1; }
+  static size_t Dimensionality() { return 1; }
 
   /**
    * Return the probability of the given observation.  If the observation is
@@ -111,12 +96,26 @@ class DiscreteDistribution
     // Ensure that the observation is within the bounds.
     if (obs >= probabilities.n_elem)
     {
-      Rcpp::Rcout << "DiscreteDistribution::Probability(): received observation "
+      Log::Debug << "DiscreteDistribution::Probability(): received observation "
           << obs << "; observation must be in [0, " << probabilities.n_elem
           << "] for this distribution." << std::endl;
     }
 
     return probabilities(obs);
+  }
+
+  /**
+   * Return the log probability of the given observation.  If the observation is
+   * greater than the number of possible observations, then a crash will
+   * probably occur -- bounds checking is not performed.
+   *
+   * @param observation Observation to return the log probability of.
+   * @return Log probability of the given observation.
+   */
+  double LogProbability(const arma::vec& observation) const
+  {
+    // TODO: consider storing log_probabilities instead
+    return log(Probability(observation));
   }
 
   /**
@@ -135,7 +134,7 @@ class DiscreteDistribution
    *
    * @param observations List of observations.
    */
-  void Estimate(const arma::mat& observations);
+  void Train(const arma::mat& observations);
 
   /**
    * Estimate the probability distribution from the given observations, taking
@@ -146,24 +145,29 @@ class DiscreteDistribution
    * @param probabilities List of probabilities that each observation is
    *    actually from this distribution.
    */
-  void Estimate(const arma::mat& observations,
-                const arma::vec& probabilities);
+  void Train(const arma::mat& observations,
+             const arma::vec& probabilities);
 
   //! Return the vector of probabilities.
   const arma::vec& Probabilities() const { return probabilities; }
   //! Modify the vector of probabilities.
   arma::vec& Probabilities() { return probabilities; }
 
-  /*
-   * Returns a string representation of this object.
+  /**
+   * Serialize the distribution.
    */
-  std::string ToString() const;
+  template<typename Archive>
+  void Serialize(Archive& ar, const unsigned int /* version */)
+  {
+    // We only need to save the probabilities, since that's all we hold.
+    ar & data::CreateNVP(probabilities, "probabilities");
+  }
 
  private:
   arma::vec probabilities;
 };
 
-}; // namespace distribution
-}; // namespace mlpack
+} // namespace distribution
+} // namespace mlpack
 
 #endif

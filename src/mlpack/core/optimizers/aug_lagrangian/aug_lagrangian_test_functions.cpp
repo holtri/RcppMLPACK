@@ -3,21 +3,6 @@
  * @author Ryan Curtin
  *
  * Implementation of AugLagrangianTestFunction class.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "aug_lagrangian_test_functions.hpp"
@@ -185,16 +170,16 @@ LovaszThetaSDP::LovaszThetaSDP(const arma::mat& edges) : edges(edges),
 {
   // Calculate V by finding the maximum index in the edges matrix.
   vertices = max(max(edges)) + 1;
-//  Rcpp::Rcout << vertices << " vertices in graph." << std::endl;
+//  Log::Debug << vertices << " vertices in graph." << std::endl;
 }
 
 double LovaszThetaSDP::Evaluate(const arma::mat& coordinates)
 {
   // The objective is equal to -Tr(ones * X) = -Tr(ones * (R^T * R)).
   // This can be simplified into the negative sum of (R^T * R).
-//  Rcpp::Rcout << "Evaluting objective function with coordinates:" << std::endl;
+//  Log::Debug << "Evaluting objective function with coordinates:" << std::endl;
 //  std::cout << coordinates << std::endl;
-//  Rcpp::Rcout << "trans(coord) * coord:" << std::endl;
+//  Log::Debug << "trans(coord) * coord:" << std::endl;
 //  std::cout << (trans(coordinates) * coordinates) << std::endl;
 
 
@@ -205,7 +190,7 @@ double LovaszThetaSDP::Evaluate(const arma::mat& coordinates)
 //  for (size_t i = 0; i < coordinates.n_cols; i++)
 //    obj -= dot(coordinates.col(i), coordinates.col(i));
 
-//  Rcpp::Rcout << "Objective function is " << obj << "." << std::endl;
+//  Log::Debug << "Objective function is " << obj << "." << std::endl;
 
   return obj;
 }
@@ -217,8 +202,6 @@ void LovaszThetaSDP::Gradient(const arma::mat& coordinates,
   // The gradient is equal to (2 S' R^T)^T, with R being coordinates.
   // S' = C - sum_{i = 1}^{m} [ y_i - sigma (Tr(A_i * (R^T R)) - b_i)] * A_i
   // We will calculate it in a not very smart way, but it should work.
- // Rcpp::Rcout << "Using stupid specialization for gradient calculation!"
- //    << std::endl;
 
   // Initialize S' piece by piece.  It is of size n x n.
   const size_t n = coordinates.n_cols;
@@ -234,12 +217,12 @@ void LovaszThetaSDP::Gradient(const arma::mat& coordinates,
     {
       // A_0 = I_n.  Hooray!  That's easy!  b_0 = 1.
       double inner = -1 * double(n) - 0.5 *
-          (trace(trans(coordinates) * coordinates) - 1);
+          (accu(trans(coordinates) % coordinates) - 1);
 
       arma::mat zz = (inner * arma::eye<arma::mat>(n, n));
 
-//      Rcpp::Rcout << "Constraint " << i << " matrix to add is " << std::endl;
-//      Rcpp::Rcout << zz << std::endl;
+//      Log::Debug << "Constraint " << i << " matrix to add is " << std::endl;
+//      Log::Debug << zz << std::endl;
 
       s -= zz;
     }
@@ -256,32 +239,25 @@ void LovaszThetaSDP::Gradient(const arma::mat& coordinates,
       a(edge[1], edge[0]) = 1;
 
       double inner = (-1) - 0.5 *
-          (trace(a * (trans(coordinates) * coordinates)));
+          (accu(a % (trans(coordinates) * coordinates)));
 
       arma::mat zz = (inner * a);
 
-//      Rcpp::Rcout << "Constraint " << i << " matrix to add is " << std::endl;
-//      Rcpp::Rcout << zz << std::endl;
+//      Log::Debug << "Constraint " << i << " matrix to add is " << std::endl;
+//      Log::Debug << zz << std::endl;
 
       s -= zz;
     }
   }
 
-//  Rcpp::Rcout << "Calculated S is: " << std::endl << s << std::endl;
-
   gradient = trans(2 * s * trans(coordinates));
-
-//  Rcpp::Rcout << "Calculated gradient is: " << std::endl << gradient << std::endl;
-
-
-//  Rcpp::Rcout << "Evaluating gradient. " << std::endl;
 
   // The gradient of -Tr(ones * X) is equal to -2 * ones * R
 //  arma::mat ones;
 //  ones.ones(coordinates.n_rows, coordinates.n_rows);
 //  gradient = -2 * ones * coordinates;
 
-//  Rcpp::Rcout << "Done with gradient." << std::endl;
+//  Log::Debug << "Done with gradient." << std::endl;
 //  std::cout << gradient;
 }
 
@@ -300,14 +276,14 @@ double LovaszThetaSDP::EvaluateConstraint(const size_t index,
     for (size_t i = 0; i < coordinates.n_cols; i++)
       sum += std::abs(dot(coordinates.col(i), coordinates.col(i)));
 
-//    Rcpp::Rcout << "Constraint " << index << " evaluates to " << sum << std::endl;
+//    Log::Debug << "Constraint " << index << " evaluates to " << sum << std::endl;
     return sum;
   }
 
   size_t i = edges(0, index - 1);
   size_t j = edges(1, index - 1);
 
-//  Rcpp::Rcout << "Constraint " << index << " evaluates to " <<
+//  Log::Debug << "Constraint " << index << " evaluates to " <<
 //    dot(coordinates.col(i), coordinates.col(j)) << "." << std::endl;
 
   // The constraint itself is X_ij, or (R^T R)_ij.
@@ -318,7 +294,7 @@ void LovaszThetaSDP::GradientConstraint(const size_t index,
                                         const arma::mat& coordinates,
                                         arma::mat& gradient)
 {
-//  Rcpp::Rcout << "Gradient of constraint " << index << " is " << std::endl;
+//  Log::Debug << "Gradient of constraint " << index << " is " << std::endl;
   if (index == 0) // This is the constraint Tr(X) = 1.
   {
     gradient = 2 * coordinates; // d/dR (Tr(R R^T)) = 2 R.
@@ -326,10 +302,10 @@ void LovaszThetaSDP::GradientConstraint(const size_t index,
     return;
   }
 
-//  Rcpp::Rcout << "Evaluating gradient of constraint " << index << " with ";
+//  Log::Debug << "Evaluating gradient of constraint " << index << " with ";
   size_t i = edges(0, index - 1);
   size_t j = edges(1, index - 1);
-//  Rcpp::Rcout << "i = " << i << " and j = " << j << "." << std::endl;
+//  Log::Debug << "i = " << i << " and j = " << j << "." << std::endl;
 
   // Since the constraint is (R^T R)_ij, the gradient for (x, y) will be (I
   // derived this for one of the MVU constraints):
@@ -353,7 +329,7 @@ const arma::mat& LovaszThetaSDP::GetInitialPoint()
   if (initialPoint.n_rows != 0 && initialPoint.n_cols != 0)
     return initialPoint; // It has already been calculated.
 
-//  Rcpp::Rcout << "Calculating initial point." << std::endl;
+//  Log::Debug << "Calculating initial point." << std::endl;
 
   // First, we must calculate the correct value of r.  The matrix we return, R,
   // will be r x V, because X = R^T R is of dimension V x V.
@@ -373,9 +349,6 @@ const arma::mat& LovaszThetaSDP::GetInitialPoint()
   if (ceil(r) > vertices)
     r = vertices; // An upper bound on the dimension.
 
-  Rcpp::Rcout << "Dimension will be " << ceil(r) << " x " << vertices << "."
-      << std::endl;
-
   initialPoint.set_size(ceil(r), vertices);
 
   // Now we set the entries of the initial matrix according to the formula given
@@ -391,20 +364,5 @@ const arma::mat& LovaszThetaSDP::GetInitialPoint()
     }
   }
 
-  Rcpp::Rcout << "Initial matrix " << std::endl << initialPoint << std::endl;
-
-  Rcpp::Rcout << "X " << std::endl << trans(initialPoint) * initialPoint
-      << std::endl;
-
-  Rcpp::Rcout << "accu " << accu(trans(initialPoint) * initialPoint) << std::endl;
-
   return initialPoint;
-}
-
-std::string AugLagrangianTestFunction::ToString() const
-{
-  // The actual output is unimportant -- this object is only for testing anyway.
-  std::ostringstream convert;
-  convert << "AugLagrangianTestFunction [" << this << "]" << std::endl;
-  return convert.str();
 }

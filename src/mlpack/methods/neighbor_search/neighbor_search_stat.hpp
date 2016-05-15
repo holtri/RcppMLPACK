@@ -4,24 +4,9 @@
  *
  * Defines the NeighborSearch class, which performs an abstract
  * nearest-neighbor-like query on two datasets.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __MLPACK_METHODS_NEIGHBOR_SEARCH_NEIGHBOR_SEARCH_STAT_HPP
-#define __MLPACK_METHODS_NEIGHBOR_SEARCH_NEIGHBOR_SEARCH_STAT_HPP
+#ifndef MLPACK_METHODS_NEIGHBOR_SEARCH_NEIGHBOR_SEARCH_STAT_HPP
+#define MLPACK_METHODS_NEIGHBOR_SEARCH_NEIGHBOR_SEARCH_STAT_HPP
 
 #include <mlpack/core.hpp>
 
@@ -61,7 +46,6 @@ class NeighborSearchStat
       firstBound(SortPolicy::WorstDistance()),
       secondBound(SortPolicy::WorstDistance()),
       bound(SortPolicy::WorstDistance()),
-      lastDistanceNode(NULL),
       lastDistance(0.0) { }
 
   /**
@@ -73,7 +57,6 @@ class NeighborSearchStat
       firstBound(SortPolicy::WorstDistance()),
       secondBound(SortPolicy::WorstDistance()),
       bound(SortPolicy::WorstDistance()),
-      lastDistanceNode(NULL),
       lastDistance(0.0) { }
 
   //! Get the first bound.
@@ -88,17 +71,25 @@ class NeighborSearchStat
   double Bound() const { return bound; }
   //! Modify the overall bound (it should be the better of the two bounds).
   double& Bound() { return bound; }
-  //! Get the last distance evaluation node.
-  void* LastDistanceNode() const { return lastDistanceNode; }
-  //! Modify the last distance evaluation node.
-  void*& LastDistanceNode() { return lastDistanceNode; }
   //! Get the last distance calculation.
   double LastDistance() const { return lastDistance; }
   //! Modify the last distance calculation.
   double& LastDistance() { return lastDistance; }
+
+  //! Serialize the statistic to/from an archive.
+  template<typename Archive>
+  void Serialize(Archive& ar, const unsigned int /* version */)
+  {
+    using data::CreateNVP;
+
+    ar & CreateNVP(firstBound, "firstBound");
+    ar & CreateNVP(secondBound, "secondBound");
+    ar & CreateNVP(bound, "bound");
+    ar & CreateNVP(lastDistance, "lastDistance");
+  }
 };
 
-}; // namespace neighbor
-}; // namespace mlpack
+} // namespace neighbor
+} // namespace mlpack
 
 #endif

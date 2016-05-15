@@ -4,26 +4,9 @@
  *
  * Implementation of PCA class to perform Principal Components Analysis on the
  * specified data set.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "pca.hpp"
 #include <mlpack/core.hpp>
-#include <iostream>
-#include <complex>
 
 using namespace std;
 using namespace mlpack;
@@ -46,7 +29,7 @@ void PCA::Apply(const arma::mat& data,
                 arma::vec& eigVal,
                 arma::mat& coeff) const
 {
-  //Timer::Start("pca");
+  Timer::Start("pca");
 
   // This matrix will store the right singular values; we do not need them.
   arma::mat v;
@@ -90,7 +73,7 @@ void PCA::Apply(const arma::mat& data,
   // Project the samples to the principals.
   transformedData = arma::trans(coeff) * centeredData;
 
-  //Timer::Stop("pca");
+  Timer::Stop("pca");
 }
 
 /**
@@ -123,10 +106,10 @@ double PCA::Apply(arma::mat& data, const size_t newDimension) const
 {
   // Parameter validation.
   if (newDimension == 0)
-    Rcpp::Rcout << "PCA::Apply(): newDimension (" << newDimension << ") cannot "
+    Log::Fatal << "PCA::Apply(): newDimension (" << newDimension << ") cannot "
         << "be zero!" << endl;
   if (newDimension > data.n_rows)
-    Rcpp::Rcout << "PCA::Apply(): newDimension (" << newDimension << ") cannot "
+    Log::Fatal << "PCA::Apply(): newDimension (" << newDimension << ") cannot "
         << "be greater than the existing dimensionality of the data ("
         << data.n_rows << ")!" << endl;
 
@@ -139,8 +122,12 @@ double PCA::Apply(arma::mat& data, const size_t newDimension) const
     // Drop unnecessary rows.
     data.shed_rows(newDimension, data.n_rows - 1);
 
+  // The svd method returns only non-zero eigenvalues so we have to calculate
+  // the right dimension before calculating the amount of variance retained.
+  double eigDim = std::min(newDimension - 1, (size_t) eigVal.n_elem - 1);
+
   // Calculate the total amount of variance retained.
-  return (sum(eigVal.subvec(0, newDimension - 1)) / sum(eigVal));
+  return (sum(eigVal.subvec(0, eigDim)) / sum(eigVal));
 }
 
 /**
@@ -157,10 +144,10 @@ double PCA::Apply(arma::mat& data, const double varRetained) const
 {
   // Parameter validation.
   if (varRetained < 0)
-    Rcpp::Rcout << "PCA::Apply(): varRetained (" << varRetained << ") must be "
+    Log::Fatal << "PCA::Apply(): varRetained (" << varRetained << ") must be "
         << "greater than or equal to 0." << endl;
   if (varRetained > 1)
-    Rcpp::Rcout << "PCA::Apply(): varRetained (" << varRetained << ") should be "
+    Log::Fatal << "PCA::Apply(): varRetained (" << varRetained << ") should be "
         << "less than or equal to 1." << endl;
 
   arma::mat coeffs;
@@ -183,14 +170,4 @@ double PCA::Apply(arma::mat& data, const double varRetained) const
     data.shed_rows(newDimension, data.n_rows - 1);
 
   return varSum;
-}
-
-// return a string of this object.
-std::string PCA::ToString() const
-{
-  std::ostringstream convert;
-  convert << "Principal Component Analysis  [" << this << "]" << std::endl;
-  if (scaleData)  
-    convert << "  Scaling Data: TRUE" << std::endl;
-  return convert.str();
 }

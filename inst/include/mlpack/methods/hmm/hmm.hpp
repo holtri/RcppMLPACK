@@ -2,26 +2,12 @@
  * @file hmm.hpp
  * @author Ryan Curtin
  * @author Tran Quoc Long
+ * @author Michael Fox
  *
  * Definition of HMM class.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __MLPACK_METHODS_HMM_HMM_HPP
-#define __MLPACK_METHODS_HMM_HMM_HPP
+#ifndef MLPACK_METHODS_HMM_HMM_HPP
+#define MLPACK_METHODS_HMM_HMM_HPP
 
 #include <mlpack/core.hpp>
 
@@ -49,12 +35,12 @@ namespace hmm /** Hidden Markov Models. */ {
  *   double Probability(const DataType& observation) const;
  *
  *   // Estimate the distribution based on the given observations.
- *   void Estimate(const std::vector<DataType>& observations);
+ *   void Train(const std::vector<DataType>& observations);
  *
  *   // Estimate the distribution based on the given observations, given also
  *   // the probability of each observation coming from this distribution.
- *   void Estimate(const std::vector<DataType>& observations,
- *                 const std::vector<double>& probabilities);
+ *   void Train(const std::vector<DataType>& observations,
+ *              const std::vector<double>& probabilities);
  * };
  * @endcode
  *
@@ -72,7 +58,7 @@ namespace hmm /** Hidden Markov Models. */ {
  *
  * @code
  * extern arma::mat observations; // Each column is an observation.
- * extern arma::Col<size_t> states; // Hidden states for each observation.
+ * extern arma::Row<size_t> states; // Hidden states for each observation.
  * // Create an untrained HMM with 5 hidden states and default (N(0, 1))
  * // Gaussian distributions with the dimensionality of the dataset.
  * HMM<GaussianDistribution> hmm(5, GaussianDistribution(observations.n_rows));
@@ -85,7 +71,7 @@ namespace hmm /** Hidden Markov Models. */ {
  * Once initialized, the HMM can evaluate the probability of a certain sequence
  * (with LogLikelihood()), predict the most likely sequence of hidden states
  * (with Predict()), generate a sequence (with Generate()), or estimate the
- * probabilities of each state for a sequence of observations (with Estimate()).
+ * probabilities of each state for a sequence of observations (with Train()).
  *
  * @tparam Distribution Type of emission distribution for this HMM.
  */
@@ -110,8 +96,8 @@ class HMM
    * @param tolerance Tolerance for convergence of training algorithm
    *      (Baum-Welch).
    */
-  HMM(const size_t states,
-      const Distribution emissions,
+  HMM(const size_t states = 0,
+      const Distribution emissions = Distribution(),
       const double tolerance = 1e-5);
 
   /**
@@ -198,7 +184,7 @@ class HMM
    *     observation.
    */
   void Train(const std::vector<arma::mat>& dataSeq,
-             const std::vector<arma::Col<size_t> >& stateSeq);
+             const std::vector<arma::Row<size_t> >& stateSeq);
 
   /**
    * Estimate the probabilities of each hidden state at each time step for each
@@ -251,7 +237,7 @@ class HMM
    */
   void Generate(const size_t length,
                 arma::mat& dataSequence,
-                arma::Col<size_t>& stateSequence,
+                arma::Row<size_t>& stateSequence,
                 const size_t startState = 0) const;
 
   /**
@@ -265,7 +251,7 @@ class HMM
    * @return Log-likelihood of most probable state sequence.
    */
   double Predict(const arma::mat& dataSeq,
-                 arma::Col<size_t>& stateSeq) const;
+                 arma::Row<size_t>& stateSeq) const;
 
   /**
    * Compute the log-likelihood of the given data sequence.
@@ -274,6 +260,36 @@ class HMM
    * @return Log-likelihood of the given sequence.
    */
   double LogLikelihood(const arma::mat& dataSeq) const;
+
+  /**
+   * HMM filtering. Computes the k-step-ahead expected emission at each time
+   * conditioned only on prior observations. That is
+   * E{ Y[t+k] | Y[0], ..., Y[t] }.
+   * The returned matrix has columns equal to the number of observations. Note
+   * that the expectation may not be meaningful for discrete emissions.
+   *
+   * @param dataSeq Sequence of observations.
+   * @param filterSeq Vector in which the expected emission sequence will be
+   *    stored.
+   * @param ahead Number of steps ahead (k) for expectations.
+   */
+  void Filter(const arma::mat& dataSeq,
+              arma::mat& filterSeq,
+              size_t ahead = 0) const;
+
+  /**
+   * HMM smoothing. Computes expected emission at each time conditioned on all
+   * observations. That is
+   * E{ Y[t] | Y[0], ..., Y[T] }.
+   * The returned matrix has columns equal to the number of observations. Note
+   * that the expectation may not be meaningful for discrete emissions.
+   *
+   * @param dataSeq Sequence of observations.
+   * @param smoothSeq Vector in which the expected emission sequence will be
+   *    stored.
+   */
+  void Smooth(const arma::mat& dataSeq,
+              arma::mat& smoothSeq) const;
 
   //! Return the vector of initial state probabilities.
   const arma::vec& Initial() const { return initial; }
@@ -301,13 +317,13 @@ class HMM
   double& Tolerance() { return tolerance; }
 
   /**
-   * Returns a string representation of this object.
+   * Serialize the object.
    */
-  std::string ToString() const;
+  template<typename Archive>
+  void Serialize(Archive& ar, const unsigned int version);
 
- private:
+ protected:
   // Helper functions.
-
   /**
    * The Forward algorithm (part of the Forward-Backward algorithm).  Computes
    * forward probabilities for each state for each observation in the given data
@@ -337,14 +353,15 @@ class HMM
                 const arma::vec& scales,
                 arma::mat& backwardProb) const;
 
-  //! Initial state probability vector.
-  arma::vec initial;
+  //! Set of emission probability distributions; one for each state.
+  std::vector<Distribution> emission;
 
   //! Transition probability matrix.
   arma::mat transition;
 
-  //! Set of emission probability distributions; one for each state.
-  std::vector<Distribution> emission;
+ private:
+  //! Initial state probability vector.
+  arma::vec initial;
 
   //! Dimensionality of observations.
   size_t dimensionality;
@@ -353,8 +370,8 @@ class HMM
   double tolerance;
 };
 
-}; // namespace hmm
-}; // namespace mlpack
+} // namespace hmm
+} // namespace mlpack
 
 // Include implementation.
 #include "hmm_impl.hpp"

@@ -6,24 +6,9 @@
  * Implementation of the Nystroem method for approximating a kernel matrix.
  * There are many variations on how to do this, so template parameters allow the
  * selection of many different techniques.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __MLPACK_METHODS_NYSTROEM_METHOD_NYSTROEM_METHOD_HPP
-#define __MLPACK_METHODS_NYSTROEM_METHOD_NYSTROEM_METHOD_HPP
+#ifndef MLPACK_METHODS_NYSTROEM_METHOD_NYSTROEM_METHOD_HPP
+#define MLPACK_METHODS_NYSTROEM_METHOD_NYSTROEM_METHOD_HPP
 
 #include <mlpack/core.hpp>
 #include "kmeans_selection.hpp"
@@ -63,8 +48,8 @@ class NystroemMethod
    * @param miniKernel to store the constructed mini-kernel matrix in.
    * @param miniKernel to store the constructed semi-kernel matrix in.
    */
-  void GetKernelMatrix(const arma::mat* data, 
-                       arma::mat& miniKernel, 
+  void GetKernelMatrix(const arma::mat* data,
+                       arma::mat& miniKernel,
                        arma::mat& semiKernel);
 
   /**
@@ -74,8 +59,8 @@ class NystroemMethod
    * @param miniKernel to store the constructed mini-kernel matrix in.
    * @param miniKernel to store the constructed semi-kernel matrix in.
    */
-  void GetKernelMatrix(const arma::Col<size_t>& selectedPoints, 
-                       arma::mat& miniKernel, 
+  void GetKernelMatrix(const arma::Col<size_t>& selectedPoints,
+                       arma::mat& miniKernel,
                        arma::mat& semiKernel);
 
  private:
@@ -87,8 +72,8 @@ class NystroemMethod
   const size_t rank;
 };
 
-}; // namespace kernel
-}; // namespace mlpack
+} // namespace kernel
+} // namespace mlpack
 
 // Include implementation.
 #include "nystroem_method_impl.hpp"

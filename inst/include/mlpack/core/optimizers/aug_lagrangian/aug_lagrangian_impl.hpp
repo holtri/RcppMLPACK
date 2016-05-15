@@ -4,25 +4,10 @@
  *
  * Implementation of AugLagrangian class (Augmented Lagrangian optimization
  * method).
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __MLPACK_CORE_OPTIMIZERS_AUG_LAGRANGIAN_AUG_LAGRANGIAN_IMPL_HPP
-#define __MLPACK_CORE_OPTIMIZERS_AUG_LAGRANGIAN_AUG_LAGRANGIAN_IMPL_HPP
+#ifndef MLPACK_CORE_OPTIMIZERS_AUG_LAGRANGIAN_AUG_LAGRANGIAN_IMPL_HPP
+#define MLPACK_CORE_OPTIMIZERS_AUG_LAGRANGIAN_AUG_LAGRANGIAN_IMPL_HPP
 
 #include <mlpack/core/optimizers/lbfgs/lbfgs.hpp>
 #include "aug_lagrangian_function.hpp"
@@ -64,19 +49,6 @@ bool AugLagrangian<LagrangianFunction>::Optimize(arma::mat& coordinates,
   return Optimize(coordinates, maxIterations);
 }
 
-// Convert the object to a string.
-template<typename LagrangianFunction>
-std::string AugLagrangian<LagrangianFunction>::ToString() const
-{
-  std::ostringstream convert;
-  convert << "AugLagrangian [" << this << "]" << std::endl;
-  convert << "  Function:" << std::endl;
-  convert << mlpack::util::Indent(function.ToString(), 2);
-  convert << "  L-BFGS optimizer:" << std::endl;
-  convert << mlpack::util::Indent(lbfgs.ToString(), 2);
-  return convert.str();
-}
-
 template<typename LagrangianFunction>
 bool AugLagrangian<LagrangianFunction>::Optimize(arma::mat& coordinates,
                                                  const size_t maxIterations)
@@ -92,7 +64,7 @@ bool AugLagrangian<LagrangianFunction>::Optimize(arma::mat& coordinates,
   for (size_t i = 0; i < function.NumConstraints(); i++)
     penalty += std::pow(function.EvaluateConstraint(i, coordinates), 2);
 
-  Rcpp::Rcout << "Penalty is " << penalty << " (threshold " << penaltyThreshold
+  Log::Debug << "Penalty is " << penalty << " (threshold " << penaltyThreshold
       << ")." << std::endl;
 
   // The odd comparison allows user to pass maxIterations = 0 (i.e. no limit on
@@ -100,15 +72,11 @@ bool AugLagrangian<LagrangianFunction>::Optimize(arma::mat& coordinates,
   size_t it;
   for (it = 0; it != (maxIterations - 1); it++)
   {
-    Rcpp::Rcout << "AugLagrangian on iteration " << it
+    Log::Info << "AugLagrangian on iteration " << it
         << ", starting with objective "  << lastObjective << "." << std::endl;
 
- //   Rcpp::Rcout << coordinates << std::endl;
-
-//    Rcpp::Rcout << trans(coordinates) * coordinates << std::endl;
-
     if (!lbfgs.Optimize(coordinates))
-      Rcpp::Rcout << "L-BFGS reported an error during optimization."
+      Log::Info << "L-BFGS reported an error during optimization."
           << std::endl;
 
     // Check if we are done with the entire optimization (the threshold we are
@@ -128,19 +96,19 @@ bool AugLagrangian<LagrangianFunction>::Optimize(arma::mat& coordinates,
     for (size_t i = 0; i < function.NumConstraints(); i++)
     {
       penalty += std::pow(function.EvaluateConstraint(i, coordinates), 2);
-//      Rcpp::Rcout << "Constraint " << i << " is " <<
+//      Log::Debug << "Constraint " << i << " is " <<
 //          function.EvaluateConstraint(i, coordinates) << std::endl;
     }
 
-    Rcpp::Rcout << "Penalty is " << penalty << " (threshold "
+    Log::Info << "Penalty is " << penalty << " (threshold "
         << penaltyThreshold << ")." << std::endl;
 
     for (size_t i = 0; i < function.NumConstraints(); ++i)
     {
 //      arma::mat tmpgrad;
 //      function.GradientConstraint(i, coordinates, tmpgrad);
-//      Rcpp::Rcout << "Gradient of constraint " << i << " is " << std::endl;
-//      Rcpp::Rcout << tmpgrad << std::endl;
+//      Log::Debug << "Gradient of constraint " << i << " is " << std::endl;
+//      Log::Debug << tmpgrad << std::endl;
     }
 
     if (penalty < penaltyThreshold) // We update lambda.
@@ -155,7 +123,7 @@ bool AugLagrangian<LagrangianFunction>::Optimize(arma::mat& coordinates,
       // penalty.  TODO: this factor should be a parameter (from CLI).  The
       // value of 0.25 is taken from Burer and Monteiro (2002).
       penaltyThreshold = 0.25 * penalty;
-      Rcpp::Rcout << "Lagrange multiplier estimates updated." << std::endl;
+      Log::Info << "Lagrange multiplier estimates updated." << std::endl;
     }
     else
     {
@@ -163,15 +131,15 @@ bool AugLagrangian<LagrangianFunction>::Optimize(arma::mat& coordinates,
       // parameter (from CLI).  The value of 10 is taken from Burer and Monteiro
       // (2002).
       augfunc.Sigma() *= 10;
-      Rcpp::Rcout << "Updated sigma to " << augfunc.Sigma() << "." << std::endl;
+      Log::Info << "Updated sigma to " << augfunc.Sigma() << "." << std::endl;
     }
   }
 
   return false;
 }
 
-}; // namespace optimization
-}; // namespace mlpack
+} // namespace optimization
+} // namespace mlpack
 
-#endif // __MLPACK_CORE_OPTIMIZERS_AUG_LAGRANGIAN_AUG_LAGRANGIAN_IMPL_HPP
+#endif // MLPACK_CORE_OPTIMIZERS_AUG_LAGRANGIAN_AUG_LAGRANGIAN_IMPL_HPP
 

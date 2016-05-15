@@ -3,24 +3,9 @@
  * @author Ryan Curtin
  *
  * A dual-tree traverser for the cover tree.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __MLPACK_CORE_TREE_COVER_TREE_DUAL_TREE_TRAVERSER_IMPL_HPP
-#define __MLPACK_CORE_TREE_COVER_TREE_DUAL_TREE_TRAVERSER_IMPL_HPP
+#ifndef MLPACK_CORE_TREE_COVER_TREE_DUAL_TREE_TRAVERSER_IMPL_HPP
+#define MLPACK_CORE_TREE_COVER_TREE_DUAL_TREE_TRAVERSER_IMPL_HPP
 
 #include <mlpack/core.hpp>
 #include <queue>
@@ -28,20 +13,29 @@
 namespace mlpack {
 namespace tree {
 
-template<typename MetricType, typename RootPointPolicy, typename StatisticType>
+template<
+    typename MetricType,
+    typename StatisticType,
+    typename MatType,
+    typename RootPointPolicy
+>
 template<typename RuleType>
-CoverTree<MetricType, RootPointPolicy, StatisticType>::
+CoverTree<MetricType, StatisticType, MatType, RootPointPolicy>::
 DualTreeTraverser<RuleType>::DualTreeTraverser(RuleType& rule) :
     rule(rule),
     numPrunes(0)
 { /* Nothing to do. */ }
 
-template<typename MetricType, typename RootPointPolicy, typename StatisticType>
+template<
+    typename MetricType,
+    typename StatisticType,
+    typename MatType,
+    typename RootPointPolicy
+>
 template<typename RuleType>
-void CoverTree<MetricType, RootPointPolicy, StatisticType>::
-DualTreeTraverser<RuleType>::Traverse(
-    CoverTree<MetricType, RootPointPolicy, StatisticType>& queryNode,
-    CoverTree<MetricType, RootPointPolicy, StatisticType>& referenceNode)
+void CoverTree<MetricType, StatisticType, MatType, RootPointPolicy>::
+DualTreeTraverser<RuleType>::Traverse(CoverTree& queryNode,
+                                      CoverTree& referenceNode)
 {
   // Start by creating a map and adding the reference root node to it.
   std::map<int, std::vector<DualCoverTreeMapEntry> > refMap;
@@ -61,11 +55,16 @@ DualTreeTraverser<RuleType>::Traverse(
   Traverse(queryNode, refMap);
 }
 
-template<typename MetricType, typename RootPointPolicy, typename StatisticType>
+template<
+    typename MetricType,
+    typename StatisticType,
+    typename MatType,
+    typename RootPointPolicy
+>
 template<typename RuleType>
-void CoverTree<MetricType, RootPointPolicy, StatisticType>::
+void CoverTree<MetricType, StatisticType, MatType, RootPointPolicy>::
 DualTreeTraverser<RuleType>::Traverse(
-    CoverTree<MetricType, RootPointPolicy, StatisticType>& queryNode,
+    CoverTree& queryNode,
     std::map<int, std::vector<DualCoverTreeMapEntry> >& referenceMap)
 {
   if (referenceMap.size() == 0)
@@ -105,8 +104,8 @@ DualTreeTraverser<RuleType>::Traverse(
 
   // If we have made it this far, all we have is a bunch of base case
   // evaluations to do.
-  //Log::Assert((*referenceMap.begin()).first == INT_MIN);
-  //Log::Assert(queryNode.Scale() == INT_MIN);
+  Log::Assert((*referenceMap.begin()).first == INT_MIN);
+  Log::Assert(queryNode.Scale() == INT_MIN);
   std::vector<DualCoverTreeMapEntry>& pointVector =
       (*referenceMap.begin()).second;
 
@@ -115,8 +114,7 @@ DualTreeTraverser<RuleType>::Traverse(
     // Get a reference to the frame.
     const DualCoverTreeMapEntry& frame = pointVector[i];
 
-    CoverTree<MetricType, RootPointPolicy, StatisticType>* refNode =
-        frame.referenceNode;
+    CoverTree* refNode = frame.referenceNode;
 
     // If the point is the same as both parents, then we have already done this
     // base case.
@@ -143,9 +141,14 @@ DualTreeTraverser<RuleType>::Traverse(
   }
 }
 
-template<typename MetricType, typename RootPointPolicy, typename StatisticType>
+template<
+    typename MetricType,
+    typename StatisticType,
+    typename MatType,
+    typename RootPointPolicy
+>
 template<typename RuleType>
-void CoverTree<MetricType, RootPointPolicy, StatisticType>::
+void CoverTree<MetricType, StatisticType, MatType, RootPointPolicy>::
 DualTreeTraverser<RuleType>::PruneMap(
     CoverTree& queryNode,
     std::map<int, std::vector<DualCoverTreeMapEntry> >& referenceMap,
@@ -174,8 +177,7 @@ DualTreeTraverser<RuleType>::PruneMap(
       const DualCoverTreeMapEntry& frame = scaleVector[j];
 
       // First evaluate if we can prune without performing the base case.
-      CoverTree<MetricType, RootPointPolicy, StatisticType>* refNode =
-          frame.referenceNode;
+      CoverTree* refNode = frame.referenceNode;
 
       // Perform the actual scoring, after restoring the traversal info.
       rule.TraversalInfo() = frame.traversalInfo;
@@ -228,8 +230,7 @@ DualTreeTraverser<RuleType>::PruneMap(
       const DualCoverTreeMapEntry& frame = scaleVector[j];
 
       // First evaluate if we can prune without performing the base case.
-      CoverTree<MetricType, RootPointPolicy, StatisticType>* refNode =
-          frame.referenceNode;
+      CoverTree* refNode = frame.referenceNode;
 
       // Perform the actual scoring, after restoring the traversal info.
       rule.TraversalInfo() = frame.traversalInfo;
@@ -261,9 +262,14 @@ DualTreeTraverser<RuleType>::PruneMap(
   }
 }
 
-template<typename MetricType, typename RootPointPolicy, typename StatisticType>
+template<
+    typename MetricType,
+    typename StatisticType,
+    typename MatType,
+    typename RootPointPolicy
+>
 template<typename RuleType>
-void CoverTree<MetricType, RootPointPolicy, StatisticType>::
+void CoverTree<MetricType, StatisticType, MatType, RootPointPolicy>::
 DualTreeTraverser<RuleType>::ReferenceRecursion(
     CoverTree& queryNode,
     std::map<int, std::vector<DualCoverTreeMapEntry> >& referenceMap)
@@ -297,8 +303,7 @@ DualTreeTraverser<RuleType>::ReferenceRecursion(
       // Get a reference to the current element.
       const DualCoverTreeMapEntry& frame = scaleVector.at(i);
 
-      CoverTree<MetricType, RootPointPolicy, StatisticType>* refNode =
-          frame.referenceNode;
+      CoverTree* refNode = frame.referenceNode;
 
       // Create the score for the children.
       double score = rule.Rescore(queryNode, *refNode, frame.score);
@@ -343,7 +348,7 @@ DualTreeTraverser<RuleType>::ReferenceRecursion(
   }
 }
 
-}; // namespace tree
-}; // namespace mlpack
+} // namespace tree
+} // namespace mlpack
 
 #endif

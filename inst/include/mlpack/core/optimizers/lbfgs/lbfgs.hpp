@@ -4,24 +4,9 @@
  * @author Ryan Curtin
  *
  * The generic L-BFGS optimizer.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __MLPACK_CORE_OPTIMIZERS_LBFGS_LBFGS_HPP
-#define __MLPACK_CORE_OPTIMIZERS_LBFGS_LBFGS_HPP
+#ifndef MLPACK_CORE_OPTIMIZERS_LBFGS_LBFGS_HPP
+#define MLPACK_CORE_OPTIMIZERS_LBFGS_LBFGS_HPP
 
 #include <mlpack/core.hpp>
 
@@ -65,11 +50,12 @@ class L_BFGS
    * @param maxStep The maximum step of the line search.
    */
   L_BFGS(FunctionType& function,
-         const size_t numBasis = 5, /* entirely arbitrary */
+         const size_t numBasis = 10, /* same default as scipy */
          const size_t maxIterations = 0, /* run forever */
          const double armijoConstant = 1e-4,
          const double wolfe = 0.9,
-         const double minGradientNorm = 1e-10,
+         const double minGradientNorm = 1e-6,
+         const double factr = 1e-15,
          const size_t maxLineSearchTrials = 50,
          const double minStep = 1e-20,
          const double maxStep = 1e20);
@@ -139,6 +125,11 @@ class L_BFGS
   //! Modify the minimum gradient norm.
   double& MinGradientNorm() { return minGradientNorm; }
 
+  //! Get the factr value.
+  double Factr() const { return factr; }
+  //! Modify the factr value.
+  double& Factr() { return factr; }
+
   //! Get the maximum number of line search trials.
   size_t MaxLineSearchTrials() const { return maxLineSearchTrials; }
   //! Modify the maximum number of line search trials.
@@ -153,9 +144,6 @@ class L_BFGS
   double MaxStep() const { return maxStep; }
   //! Modify the maximum line search step size.
   double& MaxStep() { return maxStep; }
-
-  // convert the obkect into a string
-  std::string ToString() const;
 
  private:
   //! Internal reference to the function we are optimizing.
@@ -178,6 +166,8 @@ class L_BFGS
   double wolfe;
   //! Minimum gradient norm required to continue the optimization.
   double minGradientNorm;
+  //! Minimum relative function value decrease to continue the optimization.
+  double factr;
   //! Maximum number of trials for the line search.
   size_t maxLineSearchTrials;
   //! Minimum step of the line search.
@@ -263,10 +253,10 @@ class L_BFGS
                       const arma::mat& oldGradient);
 };
 
-}; // namespace optimization
-}; // namespace mlpack
+} // namespace optimization
+} // namespace mlpack
 
 #include "lbfgs_impl.hpp"
 
-#endif // __MLPACK_CORE_OPTIMIZERS_LBFGS_LBFGS_HPP
+#endif // MLPACK_CORE_OPTIMIZERS_LBFGS_LBFGS_HPP
 

@@ -3,25 +3,10 @@
  * @author Zhihao Lou
  *
  * Laplace (double exponential) distribution used in SA.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __MLPACK_CORE_OPTIMIZER_SA_LAPLACE_DISTRIBUTION_HPP
-#define __MLPACK_CORE_OPTIMIZER_SA_LAPLACE_DISTRIBUTION_HPP
+#ifndef MLPACK_CORE_DISTRIBUTIONS_LAPLACE_DISTRIBUTION_HPP
+#define MLPACK_CORE_DISTRIBUTIONS_LAPLACE_DISTRIBUTION_HPP
 
 namespace mlpack {
 namespace distribution {
@@ -90,7 +75,15 @@ class LaplaceDistribution
   /**
    * Return the probability of the given observation.
    */
-  double Probability(const arma::vec& observation) const;
+  double Probability(const arma::vec& observation) const
+  {
+    return exp(LogProbability(observation));
+  }
+
+  /**
+   * Return the log probability of the given observation.
+   */
+  double LogProbability(const arma::vec& observation) const;
 
   /**
    * Return a randomly generated observation according to the probability
@@ -108,12 +101,10 @@ class LaplaceDistribution
     // elementwise.
     for (size_t i = 0; i < result.n_elem; ++i)
     {
-      if (result[i] < 0)
-        result[i] = mean[i] + scale * result[i] * std::log(1 + 2.0 * (result[i]
-            - 0.5));
+      if (result[i] < 0.5)
+        result[i] = mean[i] + scale * std::log(1 + 2.0 * (result[i] - 0.5));
       else
-        result[i] = mean[i] - scale * result[i] * std::log(1 - 2.0 * (result[i]
-            - 0.5));
+        result[i] = mean[i] - scale * std::log(1 - 2.0 * (result[i] - 0.5));
     }
 
     return result;
@@ -144,8 +135,15 @@ class LaplaceDistribution
   //! Modify the scale parameter.
   double& Scale() { return scale; }
 
-  //! Return a string representation of the object.
-  std::string ToString() const;
+  /**
+   * Serialize the distribution.
+   */
+  template<typename Archive>
+  void Serialize(Archive& ar, const unsigned int /* version */)
+  {
+    ar & data::CreateNVP(mean, "mean");
+    ar & data::CreateNVP(scale, "scale");
+  }
 
  private:
   //! Mean of the distribution.
@@ -155,7 +153,7 @@ class LaplaceDistribution
 
 };
 
-}; // namespace distribution
-}; // namespace mlpack
+} // namespace distribution
+} // namespace mlpack
 
 #endif

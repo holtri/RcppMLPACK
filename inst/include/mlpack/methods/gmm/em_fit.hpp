@@ -1,27 +1,13 @@
 /**
  * @file em_fit.hpp
  * @author Ryan Curtin
+ * @author Michael Fox
  *
  * Utility class to fit a GMM using the EM algorithm.  Used by
  * GMM::Estimate<>().
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __MLPACK_METHODS_GMM_EM_FIT_HPP
-#define __MLPACK_METHODS_GMM_EM_FIT_HPP
+#ifndef MLPACK_METHODS_GMM_EM_FIT_HPP
+#define MLPACK_METHODS_GMM_EM_FIT_HPP
 
 #include <mlpack/core.hpp>
 
@@ -41,7 +27,7 @@ namespace gmm {
  *
  *  - void Cluster(const arma::mat& observations,
  *                 const size_t clusters,
- *                 arma::Col<size_t>& assignments);
+ *                 arma::Row<size_t>& assignments);
  *
  * This method should create 'clusters' clusters, and return the assignment of
  * each point to a cluster.
@@ -89,8 +75,7 @@ class EMFit
    *      clustering.
    */
   void Estimate(const arma::mat& observations,
-                std::vector<arma::vec>& means,
-                std::vector<arma::mat>& covariances,
+                std::vector<distribution::GaussianDistribution>& dists,
                 arma::vec& weights,
                 const bool useInitialModel = false);
 
@@ -113,8 +98,7 @@ class EMFit
    */
   void Estimate(const arma::mat& observations,
                 const arma::vec& probabilities,
-                std::vector<arma::vec>& means,
-                std::vector<arma::mat>& covariances,
+                std::vector<distribution::GaussianDistribution>& dists,
                 arma::vec& weights,
                 const bool useInitialModel = false);
 
@@ -138,6 +122,10 @@ class EMFit
   //! Modify the tolerance for the convergence of the EM algorithm.
   double& Tolerance() { return tolerance; }
 
+  //! Serialize the fitter.
+  template<typename Archive>
+  void Serialize(Archive& ar, const unsigned int version);
+
  private:
   /**
    * Run the clusterer, and then turn the cluster assignments into Gaussians.
@@ -150,8 +138,7 @@ class EMFit
    * @param weights Vector to store a priori weights in.
    */
   void InitialClustering(const arma::mat& observations,
-                         std::vector<arma::vec>& means,
-                         std::vector<arma::mat>& covariances,
+                         std::vector<distribution::GaussianDistribution>& dists,
                          arma::vec& weights);
 
   /**
@@ -165,8 +152,8 @@ class EMFit
    * @param weights Vector of a priori weights.
    */
   double LogLikelihood(const arma::mat& data,
-                       const std::vector<arma::vec>& means,
-                       const std::vector<arma::mat>& covariances,
+                       const std::vector<distribution::GaussianDistribution>&
+                           dists,
                        const arma::vec& weights) const;
 
   //! Maximum iterations of EM algorithm.
@@ -179,8 +166,8 @@ class EMFit
   CovarianceConstraintPolicy constraint;
 };
 
-}; // namespace gmm
-}; // namespace mlpack
+} // namespace gmm
+} // namespace mlpack
 
 // Include implementation.
 #include "em_fit_impl.hpp"

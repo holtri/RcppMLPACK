@@ -4,24 +4,9 @@
  *
  * This implements the cosine distance (or cosine similarity) between two
  * vectors, which is a measure of the angle between the two vectors.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __MLPACK_CORE_KERNELS_COSINE_DISTANCE_HPP
-#define __MLPACK_CORE_KERNELS_COSINE_DISTANCE_HPP
+#ifndef MLPACK_CORE_KERNELS_COSINE_DISTANCE_HPP
+#define MLPACK_CORE_KERNELS_COSINE_DISTANCE_HPP
 
 #include <mlpack/core.hpp>
 
@@ -47,18 +32,12 @@ class CosineDistance
    * @param b Second vector.
    * @return d(a, b).
    */
-  template<typename VecType>
-  static double Evaluate(const VecType& a, const VecType& b);
+  template<typename VecTypeA, typename VecTypeB>
+  static double Evaluate(const VecTypeA& a, const VecTypeB& b);
 
-  /**
-   * Returns a string representation of this object.
-   */
-  std::string ToString() const
-  {
-    std::ostringstream convert;
-    convert << "CosineDistance [" << this << "]" << std::endl;
-    return convert.str();
-  }
+  //! Serialize the class (there's nothing to save).
+  template<typename Archive>
+  void Serialize(Archive& /* ar */, const unsigned int /* version */) { }
 };
 
 //! Kernel traits for the cosine distance.
@@ -68,10 +47,13 @@ class KernelTraits<CosineDistance>
  public:
   //! The cosine kernel is normalized: K(x, x) = 1 for all x.
   static const bool IsNormalized = true;
+
+  //! The cosine kernel doesn't include a squared distance.
+  static const bool UsesSquaredDistance = false;
 };
 
-}; // namespace kernel
-}; // namespace mlpack
+} // namespace kernel
+} // namespace mlpack
 
 // Include implementation.
 #include "cosine_distance_impl.hpp"

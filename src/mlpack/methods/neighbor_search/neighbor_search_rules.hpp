@@ -4,24 +4,9 @@
  *
  * Defines the pruning rules and base case rules necessary to perform a
  * tree-based search (with an arbitrary tree) for the NeighborSearch class.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __MLPACK_METHODS_NEIGHBOR_SEARCH_NEIGHBOR_SEARCH_RULES_HPP
-#define __MLPACK_METHODS_NEIGHBOR_SEARCH_NEIGHBOR_SEARCH_RULES_HPP
+#ifndef MLPACK_METHODS_NEIGHBOR_SEARCH_NEIGHBOR_SEARCH_RULES_HPP
+#define MLPACK_METHODS_NEIGHBOR_SEARCH_NEIGHBOR_SEARCH_RULES_HPP
 
 #include "ns_traversal_info.hpp"
 
@@ -36,7 +21,8 @@ class NeighborSearchRules
                       const typename TreeType::Mat& querySet,
                       arma::Mat<size_t>& neighbors,
                       arma::mat& distances,
-                      MetricType& metric);
+                      MetricType& metric,
+                      const bool sameSet = false);
   /**
    * Get the distance from the query point to the reference point.
    * This will update the "neighbor" matrix with the new point if appropriate
@@ -115,7 +101,7 @@ class NeighborSearchRules
   //! Modify the traversal info.
   TraversalInfoType& TraversalInfo() { return traversalInfo; }
 
- private:
+ protected:
   //! The reference set.
   const typename TreeType::Mat& referenceSet;
 
@@ -130,6 +116,9 @@ class NeighborSearchRules
 
   //! The instantiated metric.
   MetricType& metric;
+
+  //! Denotes whether or not the reference and query sets are the same.
+  bool sameSet;
 
   //! The last query point BaseCase() was called with.
   size_t lastQueryIndex;
@@ -167,10 +156,10 @@ class NeighborSearchRules
                       const double distance);
 };
 
-}; // namespace neighbor
-}; // namespace mlpack
+} // namespace neighbor
+} // namespace mlpack
 
 // Include implementation.
 #include "neighbor_search_rules_impl.hpp"
 
-#endif // __MLPACK_METHODS_NEIGHBOR_SEARCH_NEIGHBOR_SEARCH_RULES_HPP
+#endif // MLPACK_METHODS_NEIGHBOR_SEARCH_NEIGHBOR_SEARCH_RULES_HPP

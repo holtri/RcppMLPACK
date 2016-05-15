@@ -5,24 +5,9 @@
  * Simple, naive implementation of AugLagrangianFunction.  Better
  * specializations can probably be given in many cases, but this is the most
  * general case.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __MLPACK_CORE_OPTIMIZERS_AUG_LAGRANGIAN_AUG_LAGRANGIAN_FUNCTION_IMPL_HPP
-#define __MLPACK_CORE_OPTIMIZERS_AUG_LAGRANGIAN_AUG_LAGRANGIAN_FUNCTION_IMPL_HPP
+#ifndef MLPACK_CORE_OPTIMIZERS_AUG_LAGRANGIAN_AUG_LAGRANGIAN_FUNCTION_IMPL_HPP
+#define MLPACK_CORE_OPTIMIZERS_AUG_LAGRANGIAN_AUG_LAGRANGIAN_FUNCTION_IMPL_HPP
 
 // In case it hasn't been included.
 #include "aug_lagrangian_function.hpp"
@@ -110,20 +95,8 @@ const arma::mat& AugLagrangianFunction<LagrangianFunction>::GetInitialPoint()
   return function.GetInitialPoint();
 }
 
-// Convert the object to a string.
-template<typename LagrangianFunction>
-std::string AugLagrangianFunction<LagrangianFunction>::ToString() const
-{
-  std::ostringstream convert;
-  convert << "AugLagrangianFunction [" << this << "]" << std::endl;
-  convert << "  Lagrange multipliers:" << std::endl;
-  convert << lambda;
-  convert << "  Penalty parameter: " << sigma << std::endl;
-  return convert.str();
-}
-
-}; // namespace optimization
-}; // namespace mlpack
+} // namespace optimization
+} // namespace mlpack
 
 #endif
 

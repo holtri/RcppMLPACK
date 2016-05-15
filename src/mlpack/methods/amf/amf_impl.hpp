@@ -5,21 +5,6 @@
  * @author Ryan Curtin
  *
  * Implementation of AMF class.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
 namespace mlpack {
 namespace amf {
@@ -60,11 +45,14 @@ Apply(const MatType& V,
   // Initialize W and H.
   initializationRule.Initialize(V, r, W, H);
 
-  Rcpp::Rcout << "Initialized W and H." << std::endl;
+  Log::Info << "Initialized W and H." << std::endl;
 
+  // initialize the update rule
   update.Initialize(V, r);
+  // initialize the termination policy
   terminationPolicy.Initialize(V);
 
+  // check if termination conditions are met
   while (!terminationPolicy.IsConverged(W, H))
   {
     // Update the values of W and H based on the update rules provided.
@@ -72,14 +60,15 @@ Apply(const MatType& V,
     update.HUpdate(V, W, H);
   }
 
+  // get final residue and iteration count from termination policy
   const double residue = terminationPolicy.Index();
   const size_t iteration = terminationPolicy.Iteration();
 
-  Rcpp::Rcout << "AMF converged to residue of " << residue << " in "
+  Log::Info << "AMF converged to residue of " << residue << " in "
       << iteration << " iterations." << std::endl;
 
   return residue;
 }
 
-}; // namespace amf
-}; // namespace mlpack
+} // namespace amf
+} // namespace mlpack

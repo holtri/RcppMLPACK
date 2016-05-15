@@ -2,62 +2,70 @@
  * @file mult_div_update_rules.hpp
  * @author Mohan Rajendran
  *
- * Update rules for the Non-negative Matrix Factorization. This follows a method
- * described in the paper 'Algorithms for Non-negative Matrix Factorization'
- * by D. D. Lee and H. S. Seung. This is a multiplicative rule that ensures
- * that the Kullback–Leibler divergence
- * \f$ \sum_i \sum_j (V_{ij} log\frac{V_{ij}}{(WH)_{ij}}-V_{ij}+(WH)_{ij}) \f$is
- * non-increasing between subsequent iterations. Both of the update rules
- * for W and H are defined in this file.
- *
- * This set of update rules is not meant to work with sparse matrices.  Using
- * sparse matrices often causes NaNs in the output, so other choices of update
- * rules are better in that situation.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
+ * Update rules for the Non-negative Matrix Factorization.
  */
-#ifndef __MLPACK_METHODS_LMF_UPDATE_RULES_NMF_MULT_DIV_HPP
-#define __MLPACK_METHODS_LMF_UPDATE_RULES_NMF_MULT_DIV_HPP
+#ifndef MLPACK_METHODS_LMF_UPDATE_RULES_NMF_MULT_DIV_HPP
+#define MLPACK_METHODS_LMF_UPDATE_RULES_NMF_MULT_DIV_HPP
 
 #include <mlpack/core.hpp>
 
 namespace mlpack {
 namespace amf {
 
+/**
+ * This follows a method described in the paper 'Algorithms for Non-negative
+ *
+ * @code
+ * @inproceedings{lee2001algorithms,
+ *   title={Algorithms for non-negative matrix factorization},
+ *   author={Lee, D.D. and Seung, H.S.},
+ *   booktitle={Advances in Neural Information Processing Systems 13
+ *       (NIPS 2000)},
+ *   pages={556--562},
+ *   year={2001}
+ * }
+ * @endcode
+ *
+ * This is a multiplicative rule that ensures that the Kullback–Leibler
+ * divergence
+ *
+ * \f[
+ * \sum_i \sum_j (V_{ij} \log\frac{V_{ij}}{(W H)_{ij}} - V_{ij} + (W H)_{ij})
+ * \f]
+ *
+ * is non-increasing between subsequent iterations. Both of the update rules
+ * for W and H are defined in this file.
+ *
+ * This set of update rules is not meant to work with sparse matrices.  Using
+ * sparse matrices often causes NaNs in the output, so other choices of update
+ * rules are better in that situation.
+ */
 class NMFMultiplicativeDivergenceUpdate
 {
  public:
   // Empty constructor required for the WUpdateRule template.
   NMFMultiplicativeDivergenceUpdate() { }
 
+  /**
+   * Initialize the factorization.  These rules don't store any state, so the
+   * input values are ignore.
+   */
   template<typename MatType>
-  void Initialize(const MatType& dataset, const size_t rank)
+  void Initialize(const MatType& /* dataset */, const size_t /* rank */)
   {
-    (void)dataset;
-    (void)rank;
+    // Nothing to do.
   }
 
   /**
    * The update rule for the basis matrix W. The formula used is
+   *
    * \f[
-   * W_{ia} \leftarrow W_{ia} \frac{\sum_{\mu} H_{a\mu} V_{i\mu}/(WH)_{i\mu}}
+   * W_{ia} \leftarrow W_{ia} \frac{\sum_{\mu} H_{a\mu} V_{i\mu} / (W H)_{i\mu}}
    * {\sum_{\nu} H_{a\nu}}
    * \f]
-   * The function takes in all the matrices and only changes the
-   * value of the W matrix.
+   *
+   * The function takes in all the matrices and only changes the value of the W
+   * matrix.
    *
    * @param V Input matrix to be factorized.
    * @param W Basis matrix to be updated.
@@ -65,8 +73,8 @@ class NMFMultiplicativeDivergenceUpdate
    */
   template<typename MatType>
   inline static void WUpdate(const MatType& V,
-                            arma::mat& W,
-                            const arma::mat& H)
+                             arma::mat& W,
+                             const arma::mat& H)
   {
     // Simple implementation left in the header file.
     arma::mat t1;
@@ -94,12 +102,14 @@ class NMFMultiplicativeDivergenceUpdate
 
   /**
    * The update rule for the encoding matrix H. The formula used is
+   *
    * \f[
    * H_{a\mu} \leftarrow H_{a\mu} \frac{\sum_{i} W_{ia} V_{i\mu}/(WH)_{i\mu}}
    * {\sum_{k} H_{ka}}
    * \f]
-   * The function takes in all the matrices and only changes the value
-   * of the H matrix.
+   *
+   * The function takes in all the matrices and only changes the value of the H
+   * matrix.
    *
    * @param V Input matrix to be factorized.
    * @param W Basis matrix.
@@ -133,9 +143,13 @@ class NMFMultiplicativeDivergenceUpdate
       }
     }
   }
+
+  //! Serialize the object (in this case, there is nothing to serialize).
+  template<typename Archive>
+  void Serialize(Archive& /* ar */, const unsigned int /* version */) { }
 };
 
-}; // namespace amf
-}; // namespace mlpack
+} // namespace amf
+} // namespace mlpack
 
 #endif

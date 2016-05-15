@@ -3,21 +3,6 @@
  * @author Nishant Mehta (niche)
  *
  * Implementation of LARS and LASSO.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "lars.hpp"
 
@@ -28,7 +13,7 @@ LARS::LARS(const bool useCholesky,
            const double lambda1,
            const double lambda2,
            const double tolerance) :
-    matGram(matGramInternal),
+    matGram(&matGramInternal),
     useCholesky(useCholesky),
     lasso((lambda1 != 0)),
     lambda1(lambda1),
@@ -42,7 +27,7 @@ LARS::LARS(const bool useCholesky,
            const double lambda1,
            const double lambda2,
            const double tolerance) :
-    matGram(gramMatrix),
+    matGram(&gramMatrix),
     useCholesky(useCholesky),
     lasso((lambda1 != 0)),
     lambda1(lambda1),
@@ -51,12 +36,21 @@ LARS::LARS(const bool useCholesky,
     tolerance(tolerance)
 { /* Nothing left to do */ }
 
-void LARS::Regress(const arma::mat& matX,
-                   const arma::vec& y,
-                   arma::vec& beta,
-                   const bool transposeData)
+void LARS::Train(const arma::mat& matX,
+                 const arma::vec& y,
+                 arma::vec& beta,
+                 const bool transposeData)
 {
-  //Timer::Start("lars_regression");
+  Timer::Start("lars_regression");
+
+  // Clear any previous solution information.
+  betaPath.clear();
+  lambdaPath.clear();
+  activeSet.clear();
+  isActive.clear();
+  ignoreSet.clear();
+  isIgnored.clear();
+  matUtriCholFactor.reset();
 
   // This matrix may end up holding the transpose -- if necessary.
   arma::mat dataTrans;
@@ -78,7 +72,7 @@ void LARS::Regress(const arma::mat& matX,
   // Initialize yHat and beta.
   beta = arma::zeros(dataRef.n_cols);
   arma::vec yHat = arma::zeros(dataRef.n_rows);
-  arma::vec yHatDirection = arma::vec(dataRef.n_rows);
+  arma::vec yHatDirection(dataRef.n_rows);
 
   bool lassocond = false;
 
@@ -102,13 +96,13 @@ void LARS::Regress(const arma::mat& matX,
   if (maxCorr < lambda1)
   {
     lambdaPath[0] = lambda1;
-    //Timer::Stop("lars_regression");
+    Timer::Stop("lars_regression");
     return;
   }
 
   // Compute the Gram matrix.  If this is the elastic net problem, we will add
   // lambda2 * I_n to the matrix.
-  if (matGram.n_elem == 0)
+  if (matGram->n_elem != dataRef.n_cols * dataRef.n_cols)
   {
     // In this case, matGram should reference matGramInternal.
     matGramInternal = trans(dataRef) * dataRef;
@@ -142,10 +136,10 @@ void LARS::Regress(const arma::mat& matX,
         //   newGramCol[i] = dot(matX.col(activeSet[i]), matX.col(changeInd));
         // }
         // This is equivalent to the above 5 lines.
-        arma::vec newGramCol = matGram.elem(changeInd * dataRef.n_cols +
+        arma::vec newGramCol = matGram->elem(changeInd * dataRef.n_cols +
             arma::conv_to<arma::uvec>::from(activeSet));
 
-        CholeskyInsert(matGram(changeInd, changeInd), newGramCol);
+        CholeskyInsert((*matGram)(changeInd, changeInd), newGramCol);
       }
 
       // Add variable to active set.
@@ -192,7 +186,7 @@ void LARS::Regress(const arma::mat& matX,
       {
         // Singularity, so remove variable from active set, add to ignores set,
         // and look for new variable to add.
-        Rcpp::Rcout << "Encountered singularity when adding variable "
+        Log::Warn << "Encountered singularity when adding variable "
             << changeInd << " to active set; permanently removing."
             << std::endl;
         Deactivate(activeSet.size() - 1);
@@ -206,7 +200,7 @@ void LARS::Regress(const arma::mat& matX,
       arma::mat matGramActive = arma::mat(activeSet.size(), activeSet.size());
       for (size_t i = 0; i < activeSet.size(); i++)
         for (size_t j = 0; j < activeSet.size(); j++)
-          matGramActive(i, j) = matGram(activeSet[i], activeSet[j]);
+          matGramActive(i, j) = (*matGram)(activeSet[i], activeSet[j]);
 
       // Check for singularity.
       arma::mat matS = s * arma::ones<arma::mat>(1, activeSet.size());
@@ -225,7 +219,7 @@ void LARS::Regress(const arma::mat& matX,
         // and look for new variable to add.
         Deactivate(activeSet.size() - 1);
         Ignore(changeInd);
-        Rcpp::Rcout << "Encountered singularity when adding variable "
+        Log::Warn << "Encountered singularity when adding variable "
             << changeInd << " to active set; permanently removing."
             << std::endl;
         continue;
@@ -334,7 +328,18 @@ void LARS::Regress(const arma::mat& matX,
   // Unfortunate copy...
   beta = betaPath.back();
 
-  //Timer::Stop("lars_regression");
+  Timer::Stop("lars_regression");
+}
+
+void LARS::Predict(const arma::mat& points,
+                   arma::vec& predictions,
+                   const bool rowMajor) const
+{
+  // We really only need to store beta internally...
+  if (rowMajor)
+    predictions = points * betaPath.back();
+  else
+    predictions = (betaPath.back().t() * points).t();
 }
 
 // Private functions.
@@ -492,14 +497,3 @@ void LARS::CholeskyDelete(const size_t colToKill)
     matUtriCholFactor.shed_row(n);
   }
 }
-
-std::string LARS::ToString() const
-{
-  std::ostringstream convert;
-  convert << "LARS [" << this << "]" << std::endl;
-  convert << "  Gram Matrix: " << matGram.n_rows << "x" << matGram.n_cols;
-  convert << std::endl;
-  convert << "  Tolerance: " << tolerance << std::endl;
-  return convert.str();
-}
-

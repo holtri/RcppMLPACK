@@ -4,24 +4,9 @@
  *
  * This file implements functions to perform different tasks with the Density
  * Tree class.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __MLPACK_METHODS_DET_DT_UTILS_HPP
-#define __MLPACK_METHODS_DET_DT_UTILS_HPP
+#ifndef MLPACK_METHODS_DET_DT_UTILS_HPP
+#define MLPACK_METHODS_DET_DT_UTILS_HPP
 
 #include <mlpack/core.hpp>
 #include "dtree.hpp"
@@ -76,7 +61,7 @@ DTree* Trainer(arma::mat& dataset,
                const size_t minLeafSize = 5,
                const std::string unprunedTreeOutput = "");
 
-}; // namespace det
-}; // namespace mlpack
+} // namespace det
+} // namespace mlpack
 
-#endif // __MLPACK_METHODS_DET_DT_UTILS_HPP
+#endif // MLPACK_METHODS_DET_DT_UTILS_HPP

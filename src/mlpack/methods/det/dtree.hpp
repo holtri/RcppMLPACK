@@ -3,25 +3,10 @@
  * @author Parikshit Ram (pram@cc.gatech.edu)
  *
  * Density Estimation Tree class
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __MLPACK_METHODS_DET_DTREE_HPP
-#define __MLPACK_METHODS_DET_DTREE_HPP
+#ifndef MLPACK_METHODS_DET_DTREE_HPP
+#define MLPACK_METHODS_DET_DTREE_HPP
 
 #include <mlpack/core.hpp>
 
@@ -161,7 +146,7 @@ class DTree
    * @param fp File to write the tree to.
    * @param level Level of the tree (should start at 0).
    */
-  //void WriteTree(FILE *fp, const size_t level = 0) const;
+  void WriteTree(FILE *fp, const size_t level = 0) const;
 
   /**
    * Index the buckets for possible usage later; this results in every leaf in
@@ -294,9 +279,39 @@ class DTree
   arma::vec& MinVals() { return minVals; }
 
   /**
-   * Returns a string representation of this object.
+   * Serialize the density estimation tree.
    */
-  std::string ToString() const;
+  template<typename Archive>
+  void Serialize(Archive& ar, const unsigned int /* version */)
+  {
+    using data::CreateNVP;
+
+    ar & CreateNVP(start, "start");
+    ar & CreateNVP(end, "end");
+    ar & CreateNVP(maxVals, "maxVals");
+    ar & CreateNVP(minVals, "minVals");
+    ar & CreateNVP(splitDim, "splitDim");
+    ar & CreateNVP(splitValue, "splitValue");
+    ar & CreateNVP(logNegError, "logNegError");
+    ar & CreateNVP(subtreeLeavesLogNegError, "subtreeLeavesLogNegError");
+    ar & CreateNVP(subtreeLeaves, "subtreeLeaves");
+    ar & CreateNVP(root, "root");
+    ar & CreateNVP(ratio, "ratio");
+    ar & CreateNVP(logVolume, "logVolume");
+    ar & CreateNVP(bucketTag, "bucketTag");
+    ar & CreateNVP(alphaUpper, "alphaUpper");
+
+    if (Archive::is_loading::value)
+    {
+      if (left)
+        delete left;
+      if (right)
+        delete right;
+    }
+
+    ar & CreateNVP(left, "left");
+    ar & CreateNVP(right, "right");
+  }
 
  private:
 
@@ -322,7 +337,7 @@ class DTree
 
 };
 
-}; // namespace det
-}; // namespace mlpack
+} // namespace det
+} // namespace mlpack
 
-#endif // __MLPACK_METHODS_DET_DTREE_HPP
+#endif // MLPACK_METHODS_DET_DTREE_HPP

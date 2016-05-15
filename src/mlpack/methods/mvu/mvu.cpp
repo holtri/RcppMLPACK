@@ -5,26 +5,11 @@
  * Implementation of the MVU class and its auxiliary objective function class.
  *
  * Note: this implementation of MVU does not work.  See #189.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "mvu.hpp"
 
 //#include <mlpack/core/optimizers/aug_lagrangian/aug_lagrangian.hpp>
-#include <mlpack/core/optimizers/lrsdp/lrsdp.hpp>
+#include <mlpack/core/optimizers/sdp/lrsdp.hpp>
 
 #include <mlpack/methods/neighbor_search/neighbor_search.hpp>
 
@@ -48,7 +33,7 @@ void MVU::Unfold(const size_t newDim,
   outputData.randu(data.n_cols, newDim);
 
   // The number of constraints is the number of nearest neighbors plus one.
-  LRSDP mvuSolver(numNeighbors * data.n_cols + 1, outputData);
+  LRSDP<arma::sp_mat> mvuSolver(numNeighbors * data.n_cols + 1, outputData);
 
   // Set up the objective.  Because we are maximizing the trace of (R R^T),
   // we'll instead state it as min(-I_n * (R R^T)), meaning C() is -I_n.
@@ -65,13 +50,13 @@ void MVU::Unfold(const size_t newDim,
   mvuSolver.AModes().ones();
   mvuSolver.AModes()[0] = 0;
 
-  // Now all of the other constraints.  We first have to run AllkNN to get the
+  // Now all of the other constraints.  We first have to run KNN to get the
   // list of nearest neighbors.
   arma::Mat<size_t> neighbors;
   arma::mat distances;
 
-  neighbor::AllkNN allknn(data);
-  allknn.Search(numNeighbors, neighbors, distances);
+  KNN knn(data);
+  knn.Search(numNeighbors, neighbors, distances);
 
   // Add each of the other constraints.  They are sparse constraints:
   //   Tr(A_ij K) = d_ij;
@@ -115,7 +100,7 @@ void MVU::Unfold(const size_t newDim,
   // Now on with the solving.
   double objective = mvuSolver.Optimize(outputData);
 
-  Rcpp::Rcout << "Final objective is " << objective << "." << std::endl;
+  Log::Info << "Final objective is " << objective << "." << std::endl;
 
   // Revert to original data format.
   outputData = trans(outputData);

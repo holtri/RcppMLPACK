@@ -3,21 +3,6 @@
  * @author Nishant Mehta
  *
  * Implementation of Radical class
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "radical.hpp"
@@ -44,10 +29,10 @@ Radical::Radical(const double noiseStdDev,
 
 void Radical::CopyAndPerturb(mat& xNew, const mat& x) const
 {
-  //Timer::Start("radical_copy_and_perturb");
+  Timer::Start("radical_copy_and_perturb");
   xNew = repmat(x, replicates, 1) + noiseStdDev * randn(replicates * x.n_rows,
       x.n_cols);
-  //Timer::Stop("radical_copy_and_perturb");
+  Timer::Stop("radical_copy_and_perturb");
 }
 
 
@@ -112,9 +97,9 @@ void Radical::DoRadical(const mat& matXT, mat& matY, mat& matW)
   // points, and although this is the transpose of the ICA literature, this
   // choice is for computational efficiency when repeatedly generating
   // two-dimensional coordinate projections for Radical2D).
-  //Timer::Start("radical_transpose_data");
+  Timer::Start("radical_transpose_data");
   mat matX = trans(matXT);
-  //Timer::Stop("radical_transpose_data");
+  Timer::Stop("radical_transpose_data");
 
   // If m was not specified, initialize m as recommended in
   // (Learned-Miller and Fisher, 2003).
@@ -124,11 +109,11 @@ void Radical::DoRadical(const mat& matXT, mat& matY, mat& matW)
   const size_t nDims = matX.n_cols;
   const size_t nPoints = matX.n_rows;
 
-  //Timer::Start("radical_whiten_data");
+  Timer::Start("radical_whiten_data");
   mat matXWhitened;
   mat matWhitening;
   WhitenFeatureMajorMatrix(matX, matY, matWhitening);
-  //Timer::Stop("radical_whiten_data");
+  Timer::Stop("radical_whiten_data");
   // matY is now the whitened form of matX.
 
   // In the RADICAL code, they do not copy and perturb initially, although the
@@ -137,7 +122,7 @@ void Radical::DoRadical(const mat& matXT, mat& matY, mat& matW)
   //GeneratePerturbedX(X, X);
 
   // Initialize the unmixing matrix to the whitening matrix.
-  //Timer::Start("radical_do_radical");
+  Timer::Start("radical_do_radical");
   matW = matWhitening;
 
   mat matYSubspace(nPoints, 2);
@@ -146,13 +131,13 @@ void Radical::DoRadical(const mat& matXT, mat& matY, mat& matW)
 
   for (size_t sweepNum = 0; sweepNum < sweeps; sweepNum++)
   {
-    Rcpp::Rcout << "RADICAL: sweep " << sweepNum << "." << std::endl;
+    Log::Info << "RADICAL: sweep " << sweepNum << "." << std::endl;
 
     for (size_t i = 0; i < nDims - 1; i++)
     {
       for (size_t j = i + 1; j < nDims; j++)
       {
-        Rcpp::Rcout << "RADICAL 2D on dimensions " << i << " and " << j << "."
+        Log::Debug << "RADICAL 2D on dimensions " << i << " and " << j << "."
             << std::endl;
 
         matYSubspace.col(0) = matY.col(i);
@@ -179,14 +164,14 @@ void Radical::DoRadical(const mat& matXT, mat& matY, mat& matW)
       }
     }
   }
-  //Timer::Stop("radical_do_radical");
+  Timer::Stop("radical_do_radical");
 
   // The final transposes provide W and Y in the typical form from the ICA
   // literature.
-  //Timer::Start("radical_transpose_data");
+  Timer::Start("radical_transpose_data");
   matW = trans(matW);
   matY = trans(matY);
-  //Timer::Stop("radical_transpose_data");
+  Timer::Stop("radical_transpose_data");
 }
 
 void mlpack::radical::WhitenFeatureMajorMatrix(const mat& matX,
@@ -198,16 +183,4 @@ void mlpack::radical::WhitenFeatureMajorMatrix(const mat& matX,
   svd(matU, s, matV, cov(matX));
   matWhitening = matU * diagmat(1 / sqrt(s)) * trans(matV);
   matXWhitened = matX * matWhitening;
-}
-
-// return a string of this object.
-std::string Radical::ToString() const
-{
-  std::ostringstream convert;
-  convert << "Radical  [" << this << "]" << std::endl;
-  convert << "  StdDev of Noise: " << noiseStdDev << std::endl;
-  convert << "  Number of Replicates: " << replicates << std::endl;
-  convert << "  Number of Angles: " << angles << std::endl;
-  convert << "  M value: " << m << std::endl;
-  return convert.str();
 }

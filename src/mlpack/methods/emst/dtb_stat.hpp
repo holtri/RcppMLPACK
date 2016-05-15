@@ -3,24 +3,9 @@
  * @author Bill March (march@gatech.edu)
  *
  * DTBStat is the StatisticType used by trees when performing EMST.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __MLPACK_METHODS_EMST_DTB_STAT_HPP
-#define __MLPACK_METHODS_EMST_DTB_STAT_HPP
+#ifndef MLPACK_METHODS_EMST_DTB_STAT_HPP
+#define MLPACK_METHODS_EMST_DTB_STAT_HPP
 
 #include <mlpack/core.hpp>
 
@@ -28,7 +13,7 @@ namespace mlpack {
 namespace emst {
 
 /**
- * A statistic for use with MLPACK trees, which stores the upper bound on
+ * A statistic for use with mlpack trees, which stores the upper bound on
  * distance to nearest neighbors and the component which this node belongs to.
  */
 class DTBStat
@@ -100,7 +85,7 @@ class DTBStat
 
 }; // class DTBStat
 
-}; // namespace emst
-}; // namespace mlpack
+} // namespace emst
+} // namespace mlpack
 
-#endif // __MLPACK_METHODS_EMST_DTB_STAT_HPP
+#endif // MLPACK_METHODS_EMST_DTB_STAT_HPP

@@ -3,24 +3,9 @@
  * @author Ryan Curtin
  *
  * Implementation of the Softmax error function.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __MLPACK_METHODS_NCA_NCA_SOFTMAX_ERROR_FUNCTCLIN_IMPL_H
-#define __MLPACK_METHODS_NCA_NCA_SOFTMAX_ERROR_FUNCTCLIN_IMPL_H
+#ifndef MLPACK_METHODS_NCA_NCA_SOFTMAX_ERROR_FUNCTCLIN_IMPL_H
+#define MLPACK_METHODS_NCA_NCA_SOFTMAX_ERROR_FUNCTCLIN_IMPL_H
 
 // In case it hasn't been included already.
 #include "nca_softmax_error_function.hpp"
@@ -32,7 +17,7 @@ namespace nca {
 template<typename MetricType>
 SoftmaxErrorFunction<MetricType>::SoftmaxErrorFunction(
     const arma::mat& dataset,
-    const arma::Col<size_t>& labels,
+    const arma::Row<size_t>& labels,
     MetricType metric) :
     dataset(dataset),
     labels(labels),
@@ -74,7 +59,7 @@ double SoftmaxErrorFunction<MetricType>::Evaluate(const arma::mat& coordinates,
     double eval = std::exp(-metric.Evaluate(stretchedDataset.unsafe_col(i),
                                             stretchedDataset.unsafe_col(k)));
 
-    // If they are in the same
+    // If they are in the same class, update the numerator.
     if (labels[i] == labels[k])
       numerator += eval;
 
@@ -85,7 +70,7 @@ double SoftmaxErrorFunction<MetricType>::Evaluate(const arma::mat& coordinates,
   // denominator is not 0.
   if (denominator == 0.0)
   {
-    Rcpp::Rcout << "Denominator of p_" << i << " is 0!" << std::endl;
+    Log::Warn << "Denominator of p_" << i << " is 0!" << std::endl;
     return 0;
   }
 
@@ -193,7 +178,7 @@ void SoftmaxErrorFunction<MetricType>::Gradient(const arma::mat& coordinates,
   double p = 0;
   if (denominator == 0)
   {
-    Rcpp::Rcout << "Denominator of p_" << i << " is 0!" << std::endl;
+    Log::Warn << "Denominator of p_" << i << " is 0!" << std::endl;
     // If the denominator is zero, then all p_ik should be zero and there is
     // no gradient contribution from this point.
     gradient.zeros(coordinates.n_rows, coordinates.n_rows);
@@ -270,7 +255,7 @@ void SoftmaxErrorFunction<MetricType>::Precalculate(
   {
     if (denominators[i] == 0.0)
     {
-      Rcpp::Rcout << "Denominator of p_{" << i << ", j} is 0." << std::endl;
+      Log::Debug << "Denominator of p_{" << i << ", j} is 0." << std::endl;
 
       // Set to usable values.
       denominators[i] = std::numeric_limits<double>::infinity();
@@ -282,19 +267,7 @@ void SoftmaxErrorFunction<MetricType>::Precalculate(
   precalculated = true;
 }
 
-template<typename MetricType>
-std::string SoftmaxErrorFunction<MetricType>::ToString() const{
-  std::ostringstream convert;
-  convert << "Sofmax Error Function [" << this << "]" << std::endl;
-  convert << "  Dataset: " << dataset.n_rows << "x" << dataset.n_cols 
-      << std::endl;
-  convert << "  Labels: " << labels.n_elem << std::endl;
-  //convert << "Metric: " << metric << std::endl;
-  convert << "  Precalculated: " << precalculated << std::endl;
-  return convert.str();
-}
-
-}; // namespace nca
-}; // namespace mlpack
+} // namespace nca
+} // namespace mlpack
 
 #endif

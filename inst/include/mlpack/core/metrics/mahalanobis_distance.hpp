@@ -3,24 +3,9 @@
  * @author Ryan Curtin
  *
  * The Mahalanobis distance.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __MLPACK_CORE_METRICS_MAHALANOBIS_DISTANCE_HPP
-#define __MLPACK_CORE_METRICS_MAHALANOBIS_DISTANCE_HPP
+#ifndef MLPACK_CORE_METRICS_MAHALANOBIS_DISTANCE_HPP
+#define MLPACK_CORE_METRICS_MAHALANOBIS_DISTANCE_HPP
 
 #include <mlpack/core.hpp>
 
@@ -55,9 +40,11 @@ namespace metric {
  * which is faster to evaluate.
  *
  * @tparam TakeRoot If true, takes the root of the output.  It is slightly
- *   faster to leave this at the default of false.
+ *   faster to leave this at the default of false, but this means the metric may
+ *   not satisfy the triangle inequality and may not be usable for methods that
+ *   expect a true metric.
  */
-template<bool TakeRoot = false>
+template<bool TakeRoot = true>
 class MahalanobisDistance
 {
  public:
@@ -93,11 +80,8 @@ class MahalanobisDistance
    * @param a First vector.
    * @param b Second vector.
    */
-
-  // Return String of Object
-  std::string ToString() const;
-  template<typename VecType1, typename VecType2>
-  double Evaluate(const VecType1& a, const VecType2& b);
+  template<typename VecTypeA, typename VecTypeB>
+  double Evaluate(const VecTypeA& a, const VecTypeB& b);
 
   /**
    * Access the covariance matrix.
@@ -112,13 +96,18 @@ class MahalanobisDistance
    * @return Reference to the covariance matrix.
    */
   arma::mat& Covariance() { return covariance; }
+
+  //! Serialize the Mahalanobis distance.
+  template<typename Archive>
+  void Serialize(Archive& ar, const unsigned int version);
+
  private:
   //! The covariance matrix associated with this distance.
   arma::mat covariance;
 };
 
-}; // namespace distance
-}; // namespace mlpack
+} // namespace distance
+} // namespace mlpack
 
 #include "mahalanobis_distance_impl.hpp"
 

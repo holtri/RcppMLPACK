@@ -2,20 +2,7 @@
  * @file simple_residue_termination.hpp
  * @author Sumedh Ghaisas
  *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
+ * Termination policy used in AMF (Alternating Matrix Factorization).
  */
 #ifndef _MLPACK_METHODS_AMF_SIMPLERESIDUETERMINATION_HPP_INCLUDED
 #define _MLPACK_METHODS_AMF_SIMPLERESIDUETERMINATION_HPP_INCLUDED
@@ -25,65 +12,106 @@
 namespace mlpack {
 namespace amf {
 
+/**
+ * This class implements a simple residue-based termination policy. The
+ * termination decision depends on two factors: the value of the residue (the
+ * difference between the norm of WH this iteration and the previous iteration),
+ * and the number of iterations.  If the current value of residue drops below
+ * the threshold or the number of iterations goes above the iteration limit,
+ * IsConverged() will return true.  This class is meant for use with the AMF
+ * (alternating matrix factorization) class.
+ *
+ * @see AMF
+ */
 class SimpleResidueTermination
 {
  public:
-  SimpleResidueTermination(const double minResidue = 1e-10,
+  /**
+   * Construct the SimpleResidueTermination object with the given minimum
+   * residue (or the default) and the given maximum number of iterations (or the
+   * default).  0 indicates no iteration limit.
+   *
+   * @param minResidue Minimum residue for termination.
+   * @param maxIterations Maximum number of iterations.
+   */
+  SimpleResidueTermination(const double minResidue = 1e-5,
                            const size_t maxIterations = 10000)
-        : minResidue(minResidue), maxIterations(maxIterations) { }
+      : minResidue(minResidue), maxIterations(maxIterations) { }
 
+  /**
+   * Initializes the termination policy before stating the factorization.
+   *
+   * @param V Input matrix being factorized.
+   */
   template<typename MatType>
   void Initialize(const MatType& V)
   {
-    residue = minResidue;
+    // Initialize the things we keep track of.
+    residue = DBL_MAX;
     iteration = 1;
+    nm = V.n_rows * V.n_cols;
+    // Remove history.
     normOld = 0;
-
-    const size_t n = V.n_rows;
-    const size_t m = V.n_cols;
-
-    nm = n * m;
   }
 
+  /**
+   * Check if termination criterion is met.
+   *
+   * @param W Basis matrix of output.
+   * @param H Encoding matrix of output.
+   */
   bool IsConverged(arma::mat& W, arma::mat& H)
   {
-    // Calculate norm of WH after each iteration.
-    arma::mat WH;
+    // Calculate the norm and compute the residue, but do it by hand, so as to
+    // avoid calculating (W*H), which may be very large.
+    double norm = 0.0;
+    for (size_t j = 0; j < H.n_cols; ++j)
+      norm += arma::norm(W * H.col(j), "fro");
+    residue = fabs(normOld - norm) / normOld;
 
-    WH = W * H;
-    double norm = sqrt(accu(WH % WH) / nm);
-
-    if (iteration != 0)
-    {
-      residue = fabs(normOld - norm);
-      residue /= normOld;
-    }
-
+    // Store the norm.
     normOld = norm;
 
+    // Increment iteration count
     iteration++;
-    
-    if(residue < minResidue || iteration > maxIterations) return true;
-    else return false;
+    Log::Info << "Iteration " << iteration << "; residue " << residue << ".\n";
+
+    // Check if termination criterion is met.
+    return (residue < minResidue || iteration > maxIterations);
   }
 
-  const double& Index() { return residue; }
-  const size_t& Iteration() { return iteration; }
-  const size_t& MaxIterations() { return maxIterations; }
+  //! Get current value of residue
+  const double& Index() const { return residue; }
+
+  //! Get current iteration count
+  const size_t& Iteration() const { return iteration; }
+
+  //! Access max iteration count
+  const size_t& MaxIterations() const { return maxIterations; }
+  size_t& MaxIterations() { return maxIterations; }
+
+  //! Access minimum residue value
+  const double& MinResidue() const { return minResidue; }
+  double& MinResidue() { return minResidue; }
 
 public:
+  //! residue threshold
   double minResidue;
+  //! iteration threshold
   size_t maxIterations;
 
+  //! current value of residue
   double residue;
+  //! current iteration count
   size_t iteration;
+  //! norm of previous iteration
   double normOld;
 
   size_t nm;
 }; // class SimpleResidueTermination
 
-}; // namespace amf
-}; // namespace mlpack
+} // namespace amf
+} // namespace mlpack
 
 
 #endif // _MLPACK_METHODS_AMF_SIMPLERESIDUETERMINATION_HPP_INCLUDED

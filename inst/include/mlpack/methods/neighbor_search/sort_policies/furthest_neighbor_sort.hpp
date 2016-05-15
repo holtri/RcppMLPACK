@@ -4,24 +4,9 @@
  *
  * Implementation of the SortPolicy class for NeighborSearch; in this case, the
  * furthest neighbors are those that are most important.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __MLPACK_METHODS_NEIGHBOR_SEARCH_FURTHEST_NEIGHBOR_SORT_HPP
-#define __MLPACK_METHODS_NEIGHBOR_SEARCH_FURTHEST_NEIGHBOR_SORT_HPP
+#ifndef MLPACK_METHODS_NEIGHBOR_SEARCH_FURTHEST_NEIGHBOR_SORT_HPP
+#define MLPACK_METHODS_NEIGHBOR_SEARCH_FURTHEST_NEIGHBOR_SORT_HPP
 
 #include <mlpack/core.hpp>
 
@@ -57,16 +42,16 @@ class FurthestNeighborSort
 
   /**
    * Return whether or not value is "better" than ref.  In this case, that means
-   * that the value is greater than the reference.
+   * that the value is greater than or equal to the reference.
    *
    * @param value Value to compare
    * @param ref Value to compare with
    *
-   * @return bool indicating whether or not (value > ref).
+   * @return bool indicating whether or not (value >= ref).
    */
   static inline bool IsBetter(const double value, const double ref)
   {
-    return (value > ref);
+    return (value >= ref);
   }
 
   /**
@@ -162,8 +147,8 @@ class FurthestNeighborSort
   { return std::max(a - b, 0.0); }
 };
 
-}; // namespace neighbor
-}; // namespace mlpack
+} // namespace neighbor
+} // namespace mlpack
 
 // Include implementation of templated functions.
 #include "furthest_neighbor_sort_impl.hpp"

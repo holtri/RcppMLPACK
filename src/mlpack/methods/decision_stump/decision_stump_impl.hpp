@@ -3,31 +3,13 @@
  * @author Udit Saxena
  *
  * Implementation of DecisionStump class.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __MLPACK_METHODS_DECISION_STUMP_DECISION_STUMP_IMPL_HPP
-#define __MLPACK_METHODS_DECISION_STUMP_DECISION_STUMP_IMPL_HPP
+#ifndef MLPACK_METHODS_DECISION_STUMP_DECISION_STUMP_IMPL_HPP
+#define MLPACK_METHODS_DECISION_STUMP_DECISION_STUMP_IMPL_HPP
 
 // In case it hasn't been included yet.
 #include "decision_stump.hpp"
-
-#include <set>
-#include <algorithm>
 
 namespace mlpack {
 namespace decision_stump {
@@ -38,52 +20,97 @@ namespace decision_stump {
  * @param data Input, training data.
  * @param labels Labels of data.
  * @param classes Number of distinct classes in labels.
- * @param inpBucketSize Minimum size of bucket when splitting.
+ * @param bucketSize Minimum size of bucket when splitting.
  */
 template<typename MatType>
 DecisionStump<MatType>::DecisionStump(const MatType& data,
                                       const arma::Row<size_t>& labels,
                                       const size_t classes,
-                                      size_t inpBucketSize)
+                                      const size_t bucketSize) :
+    classes(classes),
+    bucketSize(bucketSize)
 {
-  numClass = classes;
-  bucketSize = inpBucketSize;
+  arma::rowvec weights;
+  Train<false>(data, labels, weights);
+}
 
+/**
+ * Empty constructor.
+ */
+template<typename MatType>
+DecisionStump<MatType>::DecisionStump() :
+    classes(1),
+    bucketSize(0),
+    splitDimension(0),
+    split(1),
+    binLabels(1)
+{
+  split[0] = DBL_MAX;
+  binLabels[0] = 0;
+}
+
+/**
+ * Train on the given data and labels.
+ */
+template<typename MatType>
+void DecisionStump<MatType>::Train(const MatType& data,
+                                   const arma::Row<size_t>& labels,
+                                   const size_t classes,
+                                   const size_t bucketSize)
+{
+  this->classes = classes;
+  this->bucketSize = bucketSize;
+
+  // Pass to unweighted training function.
+  arma::rowvec weights;
+  Train<false>(data, labels, weights);
+}
+
+/**
+ * Train the decision stump on the given data and labels.
+ *
+ * @param data Dataset to train on.
+ * @param labels Labels for dataset.
+ * @param UseWeights Whether we need to run a weighted Decision Stump.
+ */
+template<typename MatType>
+template<bool UseWeights>
+void DecisionStump<MatType>::Train(const MatType& data,
+                                   const arma::Row<size_t>& labels,
+                                   const arma::rowvec& weights)
+{
   // If classLabels are not all identical, proceed with training.
-  size_t bestAtt = 0;
+  size_t bestDim = 0;
   double entropy;
-  const double rootEntropy = CalculateEntropy<size_t>(
-      labels.subvec(0, labels.n_elem - 1));
+  const double rootEntropy = CalculateEntropy<UseWeights>(labels, weights);
 
   double gain, bestGain = 0.0;
   for (size_t i = 0; i < data.n_rows; i++)
   {
-    // Go through each attribute of the data.
-    if (IsDistinct<double>(data.row(i)))
+    // Go through each dimension of the data.
+    if (IsDistinct(data.row(i)))
     {
-      // For each attribute with non-identical values, treat it as a potential
-      // splitting attribute and calculate entropy if split on it.
-      entropy = SetupSplitAttribute(data.row(i), labels);
+      // For each dimension with non-identical values, treat it as a potential
+      // splitting dimension and calculate entropy if split on it.
+      entropy = SetupSplitDimension<UseWeights>(data.row(i), labels, weights);
 
-      // Log::Debug << "Entropy for attribute " << i << " is " << entropy << ".\n";
       gain = rootEntropy - entropy;
-      // Find the attribute with the best entropy so that the gain is
+      // Find the dimension with the best entropy so that the gain is
       // maximized.
 
-      // if (entropy < bestEntropy)
-      // Instead of the above rule, we are maximizing gain, which was
-      // what is returned from SetupSplitAttribute.
+      // We are maximizing gain, which is what is returned from
+      // SetupSplitDimension().
       if (gain < bestGain)
       {
-        bestAtt = i;
+        bestDim = i;
         bestGain = gain;
       }
     }
   }
-  splitAttribute = bestAtt;
+  splitDimension = bestDim;
 
-  // Once the splitting column/attribute has been decided, train on it.
-  TrainOnAtt<double>(data.row(splitAttribute), labels);
+  // Once the splitting column/dimension has been decided, train on it.
+  TrainOnDim(data.row(splitDimension), labels);
 }
 
 /**
@@ -98,13 +125,14 @@ template<typename MatType>
 void DecisionStump<MatType>::Classify(const MatType& test,
                                       arma::Row<size_t>& predictedLabels)
 {
+  predictedLabels.set_size(test.n_cols);
   for (size_t i = 0; i < test.n_cols; i++)
   {
     // Determine which bin the test point falls into.
     // Assume first that it falls into the first bin, then proceed through the
     // bins until it is known which bin it falls into.
     size_t bin = 0;
-    const double val = test(splitAttribute, i);
+    const double val = test(splitDimension, i);
 
     while (bin < split.n_elem - 1)
     {
@@ -119,70 +147,89 @@ void DecisionStump<MatType>::Classify(const MatType& test,
 }
 
 /**
+ * Alternate constructor which copies parameters bucketSize and numClasses
+ * from an already initiated decision stump, other. It appropriately
+ * sets the Weight vector.
  *
- *
- *
- *
- *
+ * @param other The other initiated Decision Stump object from
+ *      which we copy the values from.
+ * @param data The data on which to train this object on.
+ * @param D Weight vector to use while training. For boosting purposes.
+ * @param labels The labels of data.
+ * @param UseWeights Whether we need to run a weighted Decision Stump.
  */
-template <typename MatType>
-DecisionStump<MatType>::DecisionStump(const DecisionStump<>& ds)
+template<typename MatType>
+DecisionStump<MatType>::DecisionStump(const DecisionStump<>& other,
+                                      const MatType& data,
+                                      const arma::Row<size_t>& labels,
+                                      const arma::rowvec& weights) :
+    classes(other.classes),
+    bucketSize(other.bucketSize)
 {
-  numClass = ds.numClass;
-
-  splitAttribute = ds.splitAttribute;
-
-  bucketSize = ds.bucketSize;
-
-  split = ds.split;
-
-  binLabels = ds.binLabels;
+  Train<true>(data, labels, weights);
 }
 
 /**
- *
- *
- *
- *
- *
- *
-template <typename MatType>
-DecisionStump<MatType>::ModifyData(MatType& data, const arma::Row<double>& D)
+ * Serialize the decision stump.
  */
+template<typename MatType>
+template<typename Archive>
+void DecisionStump<MatType>::Serialize(Archive& ar,
+                                       const unsigned int /* version */)
+{
+  using data::CreateNVP;
+
+  // This is straightforward; just serialize all of the members of the class.
+  // None need special handling.
+  ar & CreateNVP(classes, "classes");
+  ar & CreateNVP(bucketSize, "bucketSize");
+  ar & CreateNVP(splitDimension, "splitDimension");
+  ar & CreateNVP(split, "split");
+  ar & CreateNVP(binLabels, "binLabels");
+}
 
 /**
- * Sets up attribute as if it were splitting on it and finds entropy when
- * splitting on attribute.
+ * Sets up dimension as if it were splitting on it and finds entropy when
+ * splitting on dimension.
  *
- * @param attribute A row from the training data, which might be a candidate for
- *      the splitting attribute.
+ * @param dimension A row from the training data, which might be a candidate for
+ *      the splitting dimension.
+ * @param UseWeights Whether we need to run a weighted Decision Stump.
  */
-template <typename MatType>
-double DecisionStump<MatType>::SetupSplitAttribute(
-    const arma::rowvec& attribute,
-    const arma::Row<size_t>& labels)
+template<typename MatType>
+template<bool UseWeights>
+double DecisionStump<MatType>::SetupSplitDimension(
+    const arma::rowvec& dimension,
+    const arma::Row<size_t>& labels,
+    const arma::rowvec& weights)
 {
   size_t i, count, begin, end;
   double entropy = 0.0;
 
-  // Sort the attribute in order to calculate splitting ranges.
-  arma::rowvec sortedAtt = arma::sort(attribute);
+  // Sort the dimension in order to calculate splitting ranges.
+  arma::rowvec sortedDim = arma::sort(dimension);
 
-  // Store the indices of the sorted attribute to build a vector of sorted
+  // Store the indices of the sorted dimension to build a vector of sorted
   // labels.  This sort is stable.
-  arma::uvec sortedIndexAtt = arma::stable_sort_index(attribute.t());
+  arma::uvec sortedIndexDim = arma::stable_sort_index(dimension.t());
 
-  arma::Row<size_t> sortedLabels(attribute.n_elem);
-  sortedLabels.fill(0);
+  arma::Row<size_t> sortedLabels(dimension.n_elem);
+  arma::rowvec sortedWeights(dimension.n_elem);
 
-  for (i = 0; i < attribute.n_elem; i++)
-    sortedLabels(i) = labels(sortedIndexAtt(i));
+  for (i = 0; i < dimension.n_elem; i++)
+  {
+    sortedLabels(i) = labels(sortedIndexDim(i));
+
+    // Apply weights if necessary.
+    if (UseWeights)
+      sortedWeights(i) = weights(sortedIndexDim(i));
+  }
 
   i = 0;
   count = 0;
 
-  // This splits the sorted into buckets of size greater than or equal to
-  // inpBucketSize.
+  // This splits the sorted data into buckets of size greater than or equal to
+  // bucketSize.
   while (i < sortedLabels.n_elem)
   {
     count++;
@@ -196,8 +243,8 @@ double DecisionStump<MatType>::SetupSplitAttribute(
       // Use ratioEl to calculate the ratio of elements in this split.
       const double ratioEl = ((double) (end - begin + 1) / sortedLabels.n_elem);
 
-      entropy += ratioEl * CalculateEntropy<size_t>(
-          sortedLabels.subvec(begin, end));
+      entropy += ratioEl * CalculateEntropy<UseWeights>(
+          sortedLabels.subvec(begin, end), sortedWeights.subvec(begin, end));
       i++;
     }
     else if (sortedLabels(i) != sortedLabels(i + 1))
@@ -223,8 +270,8 @@ double DecisionStump<MatType>::SetupSplitAttribute(
       }
       const double ratioEl = ((double) (end - begin + 1) / sortedLabels.n_elem);
 
-      entropy += ratioEl * CalculateEntropy<size_t>(
-          sortedLabels.subvec(begin, end));
+      entropy += ratioEl * CalculateEntropy<UseWeights>(
+          sortedLabels.subvec(begin, end), sortedWeights.subvec(begin, end));
 
       i = end + 1;
       count = 0;
@@ -236,31 +283,29 @@ double DecisionStump<MatType>::SetupSplitAttribute(
 }
 
 /**
- * After having decided the attribute on which to split, train on that
- * attribute.
+ * After having decided the dimension on which to split, train on that
+ * dimension.
  *
- * @param attribute Attribute is the attribute decided by the constructor on
+ * @param dimension Dimension is the dimension decided by the constructor on
  *      which we now train the decision stump.
  */
-template <typename MatType>
-template <typename rType>
-void DecisionStump<MatType>::TrainOnAtt(const arma::rowvec& attribute,
+template<typename MatType>
+template<typename VecType>
+void DecisionStump<MatType>::TrainOnDim(const VecType& dimension,
                                         const arma::Row<size_t>& labels)
 {
   size_t i, count, begin, end;
 
-  arma::rowvec sortedSplitAtt = arma::sort(attribute);
-  arma::uvec sortedSplitIndexAtt = arma::stable_sort_index(attribute.t());
-  arma::Row<size_t> sortedLabels(attribute.n_elem);
+  arma::rowvec sortedSplitDim = arma::sort(dimension);
+  arma::uvec sortedSplitIndexDim = arma::stable_sort_index(dimension.t());
+  arma::Row<size_t> sortedLabels(dimension.n_elem);
   sortedLabels.fill(0);
-  arma::vec tempSplit;
-  arma::Row<size_t> tempLabel;
 
-  for (i = 0; i < attribute.n_elem; i++)
-    sortedLabels(i) = labels(sortedSplitIndexAtt(i));
+  for (i = 0; i < dimension.n_elem; i++)
+    sortedLabels(i) = labels(sortedSplitIndexDim(i));
 
   arma::rowvec subCols;
-  rType mostFreq;
+  double mostFreq;
   i = 0;
   count = 0;
   while (i < sortedLabels.n_elem)
@@ -271,15 +316,10 @@ void DecisionStump<MatType>::TrainOnAtt(const arma::rowvec& attribute,
       begin = i - count + 1;
       end = i;
 
-      arma::rowvec zSubCols((sortedLabels.cols(begin, end)).n_elem);
-      zSubCols.fill(0.0);
-
-      subCols = sortedLabels.cols(begin, end) + zSubCols;
-
-      mostFreq = CountMostFreq<double>(subCols);
+      mostFreq = CountMostFreq(sortedLabels.cols(begin, end));
 
       split.resize(split.n_elem + 1);
-      split(split.n_elem - 1) = sortedSplitAtt(begin);
+      split(split.n_elem - 1) = sortedSplitDim(begin);
       binLabels.resize(binLabels.n_elem + 1);
       binLabels(binLabels.n_elem - 1) = mostFreq;
 
@@ -301,17 +341,13 @@ void DecisionStump<MatType>::TrainOnAtt(const arma::rowvec& attribute,
         begin = i - count + 1;
         end = i;
       }
-      arma::rowvec zSubCols((sortedLabels.cols(begin, end)).n_elem);
-      zSubCols.fill(0.0);
-
-      subCols = sortedLabels.cols(begin, end) + zSubCols;
 
       // Find the most frequent element in subCols so as to assign a label to
       // the bucket of subCols.
-      mostFreq = CountMostFreq<double>(subCols);
+      mostFreq = CountMostFreq(sortedLabels.cols(begin, end));
 
       split.resize(split.n_elem + 1);
-      split(split.n_elem - 1) = sortedSplitAtt(begin);
+      split(split.n_elem - 1) = sortedSplitDim(begin);
       binLabels.resize(binLabels.n_elem + 1);
       binLabels(binLabels.n_elem - 1) = mostFreq;
 
@@ -331,7 +367,7 @@ void DecisionStump<MatType>::TrainOnAtt(const arma::rowvec& attribute,
  * After the "split" matrix has been set up, merge ranges with identical class
  * labels.
  */
-template <typename MatType>
+template<typename MatType>
 void DecisionStump<MatType>::MergeRanges()
 {
   for (size_t i = 1; i < split.n_rows; i++)
@@ -347,60 +383,50 @@ void DecisionStump<MatType>::MergeRanges()
   }
 }
 
-template <typename MatType>
-template <typename rType>
-rType DecisionStump<MatType>::CountMostFreq(const arma::Row<rType>& subCols)
+template<typename MatType>
+template<typename VecType>
+double DecisionStump<MatType>::CountMostFreq(const VecType& subCols)
 {
-  // Sort subCols for easier processing.
-  arma::Row<rType> sortCounts = arma::sort(subCols);
-  rType element = sortCounts[0];
-  size_t count = 0, localCount = 0;
+  // We'll create a map of elements and the number of times that each element is
+  // seen.
+  std::map<double, size_t> countMap;
 
-  if (sortCounts.n_elem == 1)
-    return sortCounts[0];
-
-  // An O(n) loop which counts the most frequent element in sortCounts.
-  for (size_t i = 0; i < sortCounts.n_elem; ++i)
+  for (size_t i = 0; i < subCols.n_elem; ++i)
   {
-    if (i == sortCounts.n_elem - 1)
-    {
-      if (sortCounts(i - 1) == sortCounts(i))
-      {
-        // element = sortCounts(i - 1);
-        localCount++;
-      }
-      else if (localCount > count)
-        count = localCount;
-    }
-    else if (sortCounts(i) != sortCounts(i + 1))
-    {
-      localCount = 0;
-      count++;
-    }
+    if (countMap.count(subCols[i]) == 0)
+      countMap[subCols[i]] = 1;
     else
-    {
-      localCount++;
-      if (localCount > count)
-      {
-        count = localCount;
-        if (localCount == 1)
-          element = sortCounts(i);
-      }
-    }
+      ++countMap[subCols[i]];
   }
-  return element;
+
+  // Now find the maximum value.
+  typename std::map<double, size_t>::iterator it = countMap.begin();
+  double mostFreq = it->first;
+  size_t mostFreqCount = it->second;
+  while (it != countMap.end())
+  {
+    if (it->second >= mostFreqCount)
+    {
+      mostFreq = it->first;
+      mostFreqCount = it->second;
+    }
+
+    ++it;
+  }
+
+  return mostFreq;
 }
 
 /**
- * Returns 1 if all the values of featureRow are not same.
+ * Returns 1 if all the values of featureRow are not the same.
  *
- * @param featureRow The attribute which is checked for identical values.
+ * @param featureRow The dimension which is checked for identical values.
  */
-template <typename MatType>
-template <typename rType>
-int DecisionStump<MatType>::IsDistinct(const arma::Row<rType>& featureRow)
+template<typename MatType>
+template<typename VecType>
+int DecisionStump<MatType>::IsDistinct(const VecType& featureRow)
 {
-  rType val = featureRow(0);
+  typename VecType::elem_type val = featureRow(0);
   for (size_t i = 1; i < featureRow.n_elem; ++i)
     if (val != featureRow(i))
       return 1;
@@ -408,40 +434,65 @@ int DecisionStump<MatType>::IsDistinct(const arma::Row<rType>& featureRow)
 }
 
 /**
- * Calculate entropy of attribute.
+ * Calculate entropy of dimension.
  *
- * @param attribute The attribute for which we calculate the entropy.
- * @param labels Corresponding labels of the attribute.
+ * @param labels Corresponding labels of the dimension.
+ * @param UseWeights Whether we need to run a weighted Decision Stump.
  */
 template<typename MatType>
-template<typename AttType, typename LabelType>
-double DecisionStump<MatType>::CalculateEntropy(arma::subview_row<LabelType> labels)
+template<bool UseWeights, typename VecType, typename WeightVecType>
+double DecisionStump<MatType>::CalculateEntropy(
+    const VecType& labels,
+    const WeightVecType& weights)
 {
   double entropy = 0.0;
   size_t j;
 
-  arma::Row<size_t> numElem(numClass);
+  arma::rowvec numElem(classes);
   numElem.fill(0);
 
-  // Populate numElem; they are used as helpers to calculate
-  // entropy.
-  for (j = 0; j < labels.n_elem; j++)
-    numElem(labels(j))++;
+  // Variable to accumulate the weight in this subview_row.
+  double accWeight = 0.0;
+  // Populate numElem; they are used as helpers to calculate entropy.
 
-  // The equation for entropy uses log2(), but log2() is from C99 and thus
-  // Visual Studio will not have it.  Therefore, we will use std::log(), and
-  // then apply the change-of-base formula at the end of the calculation.
-  for (j = 0; j < numClass; j++)
+  if (UseWeights)
   {
-    const double p1 = ((double) numElem(j) / labels.n_elem);
+    for (j = 0; j < labels.n_elem; j++)
+    {
+      numElem(labels(j)) += weights(j);
+      accWeight += weights(j);
+    }
 
-    entropy += (p1 == 0) ? 0 : p1 * std::log(p1);
+    for (j = 0; j < classes; j++)
+    {
+      const double p1 = ((double) numElem(j) / accWeight);
+
+      // Instead of using log2(), which is C99 and may not exist on some
+      // compilers, use std::log(), then use the change-of-base formula to make
+      // the result correct.
+      entropy += (p1 == 0) ? 0 : p1 * std::log(p1);
+    }
+  }
+  else
+  {
+    for (j = 0; j < labels.n_elem; j++)
+      numElem(labels(j))++;
+
+    for (j = 0; j < classes; j++)
+    {
+      const double p1 = ((double) numElem(j) / labels.n_elem);
+
+      // Instead of using log2(), which is C99 and may not exist on some
+      // compilers, use std::log(), then use the change-of-base formula to make
+      // the result correct.
+      entropy += (p1 == 0) ? 0 : p1 * std::log(p1);
+    }
   }
 
   return entropy / std::log(2.0);
 }
 
-}; // namespace decision_stump
-}; // namespace mlpack
+} // namespace decision_stump
+} // namespace mlpack
 
 #endif

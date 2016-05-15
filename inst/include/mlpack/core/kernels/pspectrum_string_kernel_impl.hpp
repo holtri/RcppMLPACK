@@ -7,24 +7,9 @@
  * one-dimensional data matrix (data vector) to FastMKS which stores indices of
  * strings; then, the actual strings are given to the PSpectrumStringKernel at
  * construction time, and the kernel knows to map the indices to actual strings.
- *
- * This file is part of MLPACK 1.0.10.
- *
- * MLPACK is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * MLPACK is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details (LICENSE.txt).
- *
- * You should have received a copy of the GNU General Public License along with
- * MLPACK.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __MLPACK_CORE_KERNELS_PSPECTRUM_STRING_KERNEL_IMPL_HPP
-#define __MLPACK_CORE_KERNELS_PSPECTRUM_STRING_KERNEL_IMPL_HPP
+#ifndef MLPACK_CORE_KERNELS_PSPECTRUM_STRING_KERNEL_IMPL_HPP
+#define MLPACK_CORE_KERNELS_PSPECTRUM_STRING_KERNEL_IMPL_HPP
 
 // In case it has not been included yet.
 #include "pspectrum_string_kernel.hpp"
@@ -84,7 +69,7 @@ double PSpectrumStringKernel::Evaluate(const VecType& a,
 
   return eval;
 }
-}; // namespace kernel
-}; // namespace mlpack
+} // namespace kernel
+} // namespace mlpack
 
 #endif

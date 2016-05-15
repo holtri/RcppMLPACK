@@ -3,8 +3,40 @@
  * @author Ryan Curtin
  *
  * Take the Armadillo batch sparse matrix constructor function from newer
- * Armadillo versions and port it to versions earlier than 3.810.0.
+ * Armadillo versions and port it to versions earlier than 3.810.0, and also add
+ * a serialization function.
  */
+template<typename eT>
+template<typename Archive>
+void SpMat<eT>::serialize(Archive& ar, const unsigned int /* version */)
+{
+  using boost::serialization::make_nvp;
+  using boost::serialization::make_array;
+
+  // This is accurate from Armadillo 3.6.0 onwards.
+  // We can't use BOOST_SERIALIZATION_NVP() because of the access::rw() call.
+  ar & make_nvp("n_rows", access::rw(n_rows));
+  ar & make_nvp("n_cols", access::rw(n_cols));
+  ar & make_nvp("n_elem", access::rw(n_elem));
+  ar & make_nvp("n_nonzero", access::rw(n_nonzero));
+  ar & make_nvp("vec_state", access::rw(vec_state));
+
+  // Now we have to serialize the values, row indices, and column pointers.
+  // If we are loading, we need to initialize space for these things.
+  if (Archive::is_loading::value)
+  {
+    const uword new_n_nonzero = n_nonzero; // Save this; we're about to nuke it.
+    init(n_rows, n_cols); // Allocate column pointers.
+    mem_resize(new_n_nonzero); // Allocate storage.
+    // These calls will set the sentinel values at the end of the storage and
+    // column pointers, if necessary, so we don't need to worry about them.
+  }
+
+  ar & make_array(access::rwp(values), n_nonzero);
+  ar & make_array(access::rwp(row_indices), n_nonzero);
+  ar & make_array(access::rwp(col_ptrs), n_cols + 1);
+}
+
 #if ARMA_VERSION_MAJOR == 3 && ARMA_VERSION_MINOR < 810
 
 //! Insert a large number of values at once.
@@ -248,4 +280,101 @@ SpMat<eT>::SpMat(const Base<uword,T1>& locations_expr, const Base<eT,T2>& vals_e
     }
   }
 
+#endif
+
+#if ARMA_VERSION_MAJOR == 3 && ARMA_VERSION_MINOR < 920
+//! Insert a large number of values at once.
+//! Per CSC format, rowind_expr should be row indices,~
+//! colptr_expr should column ptr indices locations,
+//! and values should be the corresponding values.
+//! In this constructor the size is explicitly given.
+//! Values are assumed to be sorted, and the size~
+//! information is trusted
+template<typename eT>
+template<typename T1, typename T2, typename T3>
+inline
+SpMat<eT>::SpMat
+  (
+  const Base<uword,T1>& rowind_expr,
+  const Base<uword,T2>& colptr_expr,
+  const Base<eT,   T3>& values_expr,
+  const uword           in_n_rows,
+  const uword           in_n_cols
+  )
+  : n_rows(0)
+  , n_cols(0)
+  , n_elem(0)
+  , n_nonzero(0)
+  , vec_state(0)
+  , values(NULL)
+  , row_indices(NULL)
+  , col_ptrs(NULL)
+  {
+  arma_extra_debug_sigprint_this(this);
+
+  init(in_n_rows, in_n_cols);
+
+  const unwrap<T1> rowind_tmp( rowind_expr.get_ref() );
+  const unwrap<T2> colptr_tmp( colptr_expr.get_ref() );
+  const unwrap<T3>   vals_tmp( values_expr.get_ref() );
+
+  const Mat<uword>& rowind = rowind_tmp.M;
+  const Mat<uword>& colptr = colptr_tmp.M;
+  const Mat<eT>&      vals = vals_tmp.M;
+
+  arma_debug_check( (rowind.is_vec() == false), "SpMat::SpMat(): given 'rowind' object is not a vector" );
+  arma_debug_check( (colptr.is_vec() == false), "SpMat::SpMat(): given 'colptr' object is not a vector" );
+  arma_debug_check( (vals.is_vec()   == false), "SpMat::SpMat(): given 'values' object is not a vector" );
+
+  arma_debug_check( (rowind.n_elem != vals.n_elem), "SpMat::SpMat(): number of row indices is not equal to number of values" );
+  arma_debug_check( (colptr.n_elem != (n_cols+1) ), "SpMat::SpMat(): number of column pointers is not equal to n_cols+1" );
+
+  // Resize to correct number of elements (this also sets n_nonzero)
+  mem_resize(vals.n_elem);
+
+  // copy supplied values into sparse matrix -- not checked for consistency
+  arrayops::copy(access::rwp(row_indices), rowind.memptr(), rowind.n_elem );
+  arrayops::copy(access::rwp(col_ptrs),    colptr.memptr(), colptr.n_elem );
+  arrayops::copy(access::rwp(values),      vals.memptr(),   vals.n_elem   );
+
+  // important: set the sentinel as well
+  access::rw(col_ptrs[n_cols + 1]) = std::numeric_limits<uword>::max();
+  }
+#endif
+
+#if ARMA_VERSION_MAJOR < 4 || \
+    (ARMA_VERSION_MAJOR == 4 && ARMA_VERSION_MINOR < 349)
+template<typename eT>
+inline typename SpMat<eT>::const_row_col_iterator
+SpMat<eT>::begin_row_col() const
+  {
+  return begin();
+  }
+
+
+
+template<typename eT>
+inline typename SpMat<eT>::row_col_iterator
+SpMat<eT>::begin_row_col()
+  {
+  return begin();
+  }
+
+
+
+template<typename eT>
+inline typename SpMat<eT>::const_row_col_iterator
+SpMat<eT>::end_row_col() const
+  {
+  return end();
+  }
+
+
+
+template<typename eT>
+inline typename SpMat<eT>::row_col_iterator
+SpMat<eT>::end_row_col()
+  {
+  return end();
+  }
 #endif
